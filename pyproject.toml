@@ -6,7 +6,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.13"
-authors = [{ name = "YOUR NAME" }]
+authors = [{ name = "Arian Mokhtariha" }]
 # Lower bounds only, never upper caps: easy-viz must fit into users' existing
 # environments without forcing them to up- or downgrade anything.
 dependencies = [
