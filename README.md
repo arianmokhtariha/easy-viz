@@ -1,0 +1,20 @@
+# easy-viz
+
+The Metabase / Power BI of Python, at the code level: a query result goes in, a
+finished Plotly figure comes out.
+
+Run your SQL (or anything else), pass the table straight to an easy-viz function, and
+get a finished chart. Every feature of the chart is a typed, documented parameter, so a
+plot goes from a one-line default to an advanced chart by changing arguments, not by
+writing plotting code. Every function returns a plain Plotly figure, so anything the
+parameters don't cover can still be done with Plotly.
+
+> **Status:** pre-alpha, under active development. Not on PyPI yet.
+
+## Development
+```
+uv sync --all-extras --all-groups
+uv run pytest
+```
+What easy-viz is for: [`docs/product.md`](docs/product.md). How it's organised, and
+why: [`docs/`](docs/).

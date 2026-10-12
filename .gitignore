@@ -1,0 +1,32 @@
+# AI agent guides and settings (kept local, never committed)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Environment and builds
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Tool caches and reports
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Rendered images for visual review (regenerated on demand)
+.review/
+
+# Docs build output
+docs/_build/
+
+# Notebooks, editors, OS
+.ipynb_checkpoints/
+.vscode/
+.DS_Store

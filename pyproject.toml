@@ -1,0 +1,84 @@
+[project]
+name = "easy-viz"
+version = "0.1.0.dev0"
+description = "The Metabase / Power BI of Python at the code level: query result in, finished Plotly figure out."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.13"
+authors = [{ name = "YOUR NAME" }]
+# Lower bounds only, never upper caps: easy-viz must fit into users' existing
+# environments without forcing them to up- or downgrade anything.
+dependencies = [
+    "plotly>=7.1",     # rendering core
+    "narwhals>=2.0",   # accepts pandas / polars / pyarrow / ... without depending on them
+    "numpy>=2.0",      # numeric work
+    "scipy>=1.13",     # statistics (KDE, regression, clustering, distributions)
+]
+
+[project.optional-dependencies]
+export = ["kaleido>=1.5"]   # static PNG/SVG/PDF export; needs Chrome (plotly_get_chrome)
+
+[dependency-groups]
+dev = [
+    "pytest>=9",
+    "pytest-cov",          # test coverage report
+    "syrupy>=6",           # snapshot tests of figure output
+    "ruff>=0.17",          # lint + format
+    "mypy>=2.4",           # type checking
+    "scipy-stubs",         # type information for scipy
+    "pandas>=2.2",         # test inputs: easy-viz must work with every dataframe library
+    "polars>=1.0",
+    "pyarrow>=17",
+    "kaleido>=1.5",        # export tests and rendering figures for visual review
+    "ipykernel",           # use the project's .venv as a notebook kernel
+    "nbformat>=4.2",       # Plotly needs it to display figures in notebooks
+    "nbmake",              # runs the gallery notebooks as tests
+]
+docs = [
+    "sphinx",
+    "pydata-sphinx-theme",
+    "numpydoc",
+    "myst-nb>=1.4",        # renders Markdown docs and the gallery notebooks
+]
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+# Agent guides are gitignored but still on disk; keep them out of local builds.
+source-exclude = ["**/CLAUDE.md", "**/CLAUDE.local.md", ".claude/**"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+# E/W/F: errors, I: import order, N: naming, UP: modern syntax, B: likely bugs,
+# SIM: simplifications, NPY: numpy, D: docstrings, ANN: type annotations,
+# TID: import rules, RUF: ruff extras
+select = ["E", "W", "F", "I", "N", "UP", "B", "SIM", "NPY", "D", "ANN", "TID", "RUF"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"   # absolute imports only
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+"examples/**" = ["D"]
+
+[tool.mypy]
+python_version = "3.13"   # the supported minimum: flags 3.14/3.15-only features
+strict = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["plotly.*"]      # Plotly ships no type information
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "-ra"]
+markers = ["export: needs Chrome for kaleido static export"]
