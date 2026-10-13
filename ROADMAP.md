@@ -3,7 +3,6 @@
 Where easy-viz stands. Updated in the PR that changes it.
 
 ## Now
-- CI: run lint, type checks and tests on every pull request (Python 3.13–3.15)
 - [Plan 0001: Foundation](docs/plans/0001-foundation.md) (proposed)
 
 ## Next
@@ -21,3 +20,5 @@ Where easy-viz stands. Updated in the PR that changes it.
   GitHub release and publishes to PyPI through trusted publishing
 
 ## Done
+- CI: lint, formatting, type checks and tests on Python 3.13–3.15 for every pull
+  request and every push to `main`
