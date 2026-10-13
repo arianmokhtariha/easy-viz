@@ -108,10 +108,15 @@ A new role is added here in the same PR that introduces it.
   and static export needs Chrome.
 - **Two `$` in a string switch on LaTeX mode.** Every user-supplied string goes
   through `_layout.escape_text()`.
-- **`make_subplots` spacing is a fraction of the whole figure.** Use
-  `_layout.grid_geometry()` (pixel budgets), never literal fractions.
+- **`make_subplots` spacing is a fraction, not pixels**, so fixed fractions starve
+  large grids. Use `_layout.grid_geometry()` (pixel budgets), never literal
+  fractions.
+- **`make_subplots` draws subplot titles at a fixed 16 px**, ignoring the template.
+  Grid plots restyle them from the theme.
 - **Heatmap `textfont.color` is one colour for all cells.** Colour scales that carry
   labels keep WCAG 4.5:1 contrast against that one colour.
-- **Each kaleido export starts Chrome.** Batch exports with `pio.write_images()`.
+- **Each kaleido export starts Chrome.** Batch exports with `pio.write_images()`
+  (`export.save_many`). It ignores each figure's own width and height, so pass them
+  explicitly.
 - **Plotly ships no type information.** Keep untyped values inside the wrapper;
   public signatures stay concrete.
