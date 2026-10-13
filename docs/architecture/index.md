@@ -1,6 +1,6 @@
 # Architecture
 
-Covers: nothing directly; every file is covered by one of the docs linked below.
+Covers: nothing directly; this page is the overview that links to every doc.
 
 How easy-viz is built today. Every doc here describes only what is on `main`, and
 mirrors a directory of the repository.
@@ -13,9 +13,11 @@ the doc that owns each one.
 | Part | Directory | Doc |
 |---|---|---|
 | Continuous integration | `.github/` | [ci/index.md](ci/index.md) |
+| Library package | `src/easy_viz/` | none yet |
+| Tests | `tests/` | none yet |
 
-The library package `src/easy_viz/` is a placeholder with no public functions yet. Its
-architecture docs are created together with its first modules.
+The library package is a placeholder that exports nothing, and `tests/` holds a single
+import test. Neither has an architecture doc yet.
 
 ## Invariants
 - Every architecture doc is linked from this page or from an `index.md` below it.

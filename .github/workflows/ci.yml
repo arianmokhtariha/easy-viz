@@ -11,34 +11,40 @@ on:
 permissions:
   contents: read
 
-# A new push to the same branch or PR cancels the run it makes obsolete.
+# A new push to a PR cancels the run it makes obsolete. Runs on main are never
+# cancelled, so every commit on main gets a result.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   checks:
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Every uv command fails if uv.lock is out of date with pyproject.toml,
+      # instead of silently resolving new versions.
+      UV_LOCKED: 1
     strategy:
       # Finish every version, so one failure doesn't hide the others' results.
       fail-fast: false
       matrix:
         python-version: ["3.13", "3.14", "3.15"]
     steps:
-      - uses: actions/checkout@v7
+      # Actions are pinned to commit SHAs: a tag can be moved, a commit can't.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv and Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
-      # --locked fails if uv.lock is out of date with pyproject.toml. The docs group
-      # (Sphinx) is left out: no check here needs it.
+      # The dev group is installed by default; the docs group (Sphinx) is not
+      # needed by any check here.
       - name: Install dependencies
-        run: uv sync --locked --all-extras --group dev
+        run: uv sync --all-extras
 
       - name: Lint
         run: uv run ruff check .
