@@ -3,6 +3,9 @@ CLAUDE.md
 CLAUDE.local.md
 .claude/
 
+# Legacy reference code being ported into easy-viz (local only, deleted when done)
+legacy/
+
 # Python
 __pycache__/
 *.py[cod]
