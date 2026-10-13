@@ -1,5 +1,7 @@
 # easy-viz
 
+[![CI](https://github.com/arianmokhtariha/easy-viz/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/arianmokhtariha/easy-viz/actions/workflows/ci.yml)
+
 The Metabase / Power BI of Python, at the code level: a query result goes in, a
 finished Plotly figure comes out.
 
