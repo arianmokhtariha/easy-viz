@@ -2,11 +2,12 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass, fields
-from functools import cache
+from functools import lru_cache
 from itertools import pairwise
 
 import plotly.graph_objects as go
 
+from easy_viz._validate import check_positive_int, check_range
 from easy_viz.theme._color import ACCEPTED_FORMS, is_color
 
 type Color = str
@@ -165,7 +166,7 @@ class Theme:
             elif field.type is ColorScale:
                 object.__setattr__(self, name, _checked_scale(name, value))
             elif field.type is Px:
-                _check_px(name, value)
+                check_positive_int("Theme", name, value)
             elif field.type is str:
                 if not isinstance(value, str) or not value.strip():
                     raise ValueError(
@@ -198,16 +199,6 @@ def _check_color(name: str, value: object) -> None:
         )
 
 
-def _check_px(name: str, value: object) -> None:
-    """Raise unless ``value`` is a positive whole number of pixels."""
-    # bool is an int subclass; True would otherwise pass as 1 px.
-    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-        raise ValueError(
-            f"Theme: {name}={value!r} must be a positive whole number of px. "
-            "Pass a value such as 12."
-        )
-
-
 def _checked_scale(name: str, value: object) -> ColorScale:
     """Validate a colour scale and return it as a tuple of ``(float, str)``."""
     stops: list[tuple[float, Color]] = []
@@ -218,11 +209,7 @@ def _checked_scale(name: str, value: object) -> ColorScale:
                 "Write each stop as (position, colour)."
             )
         position, color = stop
-        if isinstance(position, bool) or not isinstance(position, int | float):
-            raise ValueError(
-                f"Theme: {name} has the position {position!r}. "
-                "Positions are numbers from 0 to 1."
-            )
+        check_range("Theme", f"{name} position", position, low=0, high=1)
         _check_color(name, color)
         stops.append((float(position), color))
     if len(stops) < 2 or stops[0][0] != 0 or stops[-1][0] != 1:
@@ -245,7 +232,8 @@ def _scale(scale: ColorScale) -> list[list[float | str]]:
     return [[position, color] for position, color in scale]
 
 
-@cache
+# Bounded: a session that builds many custom themes must not keep them all.
+@lru_cache(maxsize=32)
 def build_template(theme: Theme) -> go.layout.Template:
     """Turn a theme into a Plotly template (cached: a theme is immutable).
 

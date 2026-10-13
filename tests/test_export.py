@@ -163,6 +163,7 @@ def test_save_rejects_unsupported_extensions_before_touching_disk(
         ({"scale": 0}, "scale=0"),  # plotly would treat 0 as "use the default"
         ({"scale": -2}, "scale=-2"),
         ({"scale": True}, "scale=True"),
+        ({"scale": float("nan")}, "scale=nan"),  # passes "<= 0", fails in Chrome
         ({"width": 0}, "width=0"),
         ({"height": 12.5}, "height=12.5"),
     ],
@@ -174,7 +175,15 @@ def test_save_rejects_unusable_scale_and_sizes(
         save(make_fig(), tmp_path / "chart.png", **kwargs)  # type: ignore[arg-type]
 
 
-@pytest.mark.parametrize("name", ["", "a/b", "a\\b", "..", ".", "C:x", "../escape"])
+@pytest.mark.parametrize(
+    "name",
+    # Windows refuses the second line too; caught up front, so a batch never
+    # fails half-written.
+    [
+        *("", "a/b", "a\\b", "..", ".", "C:x", "../escape"),
+        *("Margin?", "a|b", "NUL", "con.v2", "trailing.", "tab\there"),
+    ],
+)
 def test_save_many_rejects_names_that_are_not_plain_file_names(
     tmp_path: Path, name: str
 ) -> None:

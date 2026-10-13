@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from easy_viz._validate import check_positive_int, check_range
+
 
 @dataclass(frozen=True, slots=True)
 class Config:
@@ -21,29 +23,10 @@ class Config:
 
     def __post_init__(self) -> None:
         """Reject values no figure can use."""
-        # bool is an int subclass; width=True would otherwise pass as 1 px.
-        if isinstance(self.width, bool) or not isinstance(self.width, int):
-            raise TypeError(
-                f"Config: width must be an int (px), got {self.width!r}. "
-                "Pass a whole number such as 1200."
-            )
-        if self.width <= 0:
-            raise ValueError(
-                f"Config: width={self.width} must be positive. "
-                "Pass a width in px such as 1200."
-            )
-        if isinstance(self.export_scale, bool) or not isinstance(
-            self.export_scale, int | float
-        ):
-            raise TypeError(
-                f"Config: export_scale must be a number, got {self.export_scale!r}. "
-                "Pass a number such as 2."
-            )
-        if self.export_scale <= 0:
-            raise ValueError(
-                f"Config: export_scale={self.export_scale} must be positive. "
-                "Pass a number such as 2."
-            )
+        check_positive_int("set_config", "width", self.width)
+        check_range(
+            "set_config", "export_scale", self.export_scale, low=0, include_low=False
+        )
 
 
 _current = Config()

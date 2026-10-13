@@ -26,7 +26,7 @@ import numpy as np
 import numpy.typing as npt
 
 from easy_viz._typing import Agg, FrameLike
-from easy_viz._validate import message, setting
+from easy_viz._validate import check_choice, message, setting
 from easy_viz._warnings import warn
 
 # Any: frames are generic over the user's native table type, which is only
@@ -410,12 +410,35 @@ def aggregate(
     key_columns = list(dict.fromkeys(c for c in keys.values() if c is not None))
     if not key_columns:
         raise ValueError(f"{func}: aggregate needs at least one key column.")
+    if agg is not None:
+        check_choice(func, "agg", agg, Agg)
+    values = list(dict.fromkeys(values))
+    overlap = [column for column in values if column in key_columns]
+    if overlap:
+        raise ValueError(
+            message(
+                func,
+                f"{overlap[0]!r} is used both as y and to group the data",
+                "Use different columns for y and for x, color or facets",
+            )
+        )
     order = nw.generate_temporary_column_name(8, frame.columns)
     indexed = frame.with_row_index(order)
     if agg is None:
         _check_unique(indexed, func, keys, key_columns, order)
-        return frame, list(values)
+        return frame, values
 
+    dropped = [c for c in frame.columns if c not in key_columns and c not in values]
+    if dropped:
+        names = ", ".join(repr(column) for column in dropped)
+        warn(
+            message(
+                func,
+                f"{setting('agg', agg)} combines rows, so {names} has no single "
+                "value per group and is not shown",
+                "Remove it, or aggregate it in the query",
+            )
+        )
     if not values and agg != "count":
         raise ValueError(
             message(

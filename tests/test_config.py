@@ -30,12 +30,15 @@ def test_partial_update_keeps_the_other_value() -> None:
 @pytest.mark.parametrize(
     ("kwargs", "error", "named"),
     [
-        ({"width": True}, TypeError, "width"),  # bool is an int subclass
-        ({"width": 1400.5}, TypeError, "width"),
+        ({"width": True}, ValueError, "width=True"),  # bool is an int subclass
+        ({"width": 1400.5}, ValueError, "width=1400.5"),
         ({"width": 0}, ValueError, "width=0"),
         ({"width": -5}, ValueError, "width=-5"),
-        ({"export_scale": True}, TypeError, "export_scale"),
-        ({"export_scale": "2"}, TypeError, "export_scale"),
+        ({"export_scale": True}, ValueError, "export_scale=True"),
+        ({"export_scale": "2"}, ValueError, "export_scale='2'"),
+        # NaN and infinity pass a "<= 0" check, then fail late inside Chrome.
+        ({"export_scale": float("nan")}, ValueError, "export_scale=nan"),
+        ({"export_scale": float("inf")}, ValueError, "export_scale=inf"),
         ({"export_scale": 0}, ValueError, "export_scale=0"),
         ({"export_scale": -1.5}, ValueError, "export_scale=-1.5"),
     ],

@@ -43,8 +43,10 @@ and warning text in the one format of
 ## Pitfalls
 - **`bool` is an `int`** (and an `Integral` and a `Real`) in Python, so `top_n=True`
   would pass a naive number check. Number checks reject `bool` first.
-- **NaN fails every comparison**, so a check written as "raise if `value < low`"
-  would accept it. `check_range` converts to `float` and rejects NaN explicitly.
+- **NaN fails every comparison**, so a check written as "raise if `value <= 0`"
+  would accept it, and infinity passes it. `check_range` converts to `float` and
+  rejects every non-finite value. That's why `config`, `export` and `theme` use
+  these helpers instead of their own checks.
 - **`check_choice` needs the alias, not a value list.** Passing a non-`Literal` type
   raises `TypeError` (a programming error), because `get_args` would return nothing
   and every value would be rejected.

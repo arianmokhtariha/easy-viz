@@ -9,15 +9,21 @@ from typing import Literal, get_args
 import plotly.graph_objects as go
 import plotly.io as pio
 
+from easy_viz._validate import check_positive_int, check_range, message
 from easy_viz.config import get_config
 
 ImageFormat = Literal["png", "jpg", "jpeg", "webp", "svg", "pdf"]
 _FORMATS: tuple[str, ...] = get_args(ImageFormat)
 _FORMAT_LIST = ", ".join(_FORMATS)
 
-# Characters that would move a file out of the target directory, or that no
-# operating system accepts in a file name (":" is invalid on Windows).
-_FORBIDDEN_NAME_CHARS = frozenset("/\\:")
+# Characters that would move a file out of the target directory, or that Windows
+# refuses in a file name: checked up front so a batch never fails half-written.
+_FORBIDDEN_NAME_CHARS = frozenset('<>:"/\\|?*')
+# Device names Windows reserves, with or without an extension.
+_RESERVED_NAMES = frozenset(
+    ["CON", "PRN", "AUX", "NUL"]
+    + [f"{device}{n}" for device in ("COM", "LPT") for n in range(1, 10)]
+)
 
 
 def save(
@@ -195,10 +201,18 @@ def _check_names(figs: Mapping[str, go.Figure]) -> None:
             or not name
             or name in {".", ".."}
             or _FORBIDDEN_NAME_CHARS.intersection(name)
+            or any(ord(char) < 32 for char in name)
+            or name.endswith((".", " "))
+            or name.split(".")[0].upper() in _RESERVED_NAMES
         ):
             raise ValueError(
-                f"save_many: figs has the invalid file name {name!r}. Use a "
-                "non-empty name without '/', '\\' or ':', such as 'revenue'."
+                message(
+                    "save_many",
+                    f"figs has the invalid file name {name!r}",
+                    "Use a name such as 'revenue': not a reserved device name "
+                    "(CON, NUL, ...), not ending in a dot or space, and without "
+                    'any of < > : " / \\ | ? *',
+                )
             )
         # Case-insensitive file systems (Windows, macOS) treat these as one file.
         if (other := seen.setdefault(name.lower(), name)) != name:
@@ -212,24 +226,15 @@ def _resolve_scale(function: str, scale: float | None) -> float:
     """Return ``scale``, or the configured export scale when it is ``None``."""
     if scale is None:
         return get_config().export_scale
-    if isinstance(scale, bool) or not isinstance(scale, int | float) or scale <= 0:
-        # Plotly treats a falsy scale as "use the default", which would hide this.
-        raise ValueError(
-            f"{function}: scale={scale!r} must be a positive number. "
-            "Pass a number such as 2, or None for the configured default."
-        )
+    # Plotly treats a falsy scale as "use the default", which would hide a 0.
+    check_range(function, "scale", scale, low=0, include_low=False)
     return scale
 
 
 def _check_pixels(function: str, name: str, value: int | None) -> None:
     """Raise if a size override is not a positive whole number of px."""
-    if value is None:
-        return
-    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-        raise ValueError(
-            f"{function}: {name}={value!r} must be a positive whole number of px. "
-            f"Pass a size such as 1200, or None to keep the figure's {name}."
-        )
+    if value is not None:
+        check_positive_int(function, name, value)
 
 
 def _layout_size(fig: go.Figure, attribute: Literal["width", "height"]) -> int | None:

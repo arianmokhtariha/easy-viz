@@ -58,10 +58,12 @@ What they add:
   are not positive.
 - **`scale` has no effect on `svg` and `pdf`**, which are vector formats. It is not
   an error: users set one scale for a mixed batch.
-- **File names are checked for portability, not only validity.** `save_many` rejects
-  `/`, `\`, `:`, `.` and `..` and names that differ only by case, because on Windows
-  and macOS two such names are the same file and the second export would silently
-  overwrite the first.
+- **File names are checked for portability, not only validity, before any export
+  starts.** `save_many` rejects names Windows refuses (`< > : " / \ | ? *`, control
+  characters, a trailing dot or space, device names such as `CON` or `NUL.txt`),
+  `.` and `..`, and names that differ only by case: on Windows and macOS those are
+  the same file, and the second export would silently overwrite the first. Checking
+  up front means a batch never fails half-written.
 - **An empty mapping raises** instead of returning `[]`: a filter that left no
   figures is more likely a bug than an intended no-op, and a silent empty result is
   the kind of guess the product principles forbid.

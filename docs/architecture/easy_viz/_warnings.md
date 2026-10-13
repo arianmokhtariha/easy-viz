@@ -23,6 +23,10 @@ effect in the current mode, and, once plots exist, categories folded into "Other
 - The reported file is the caller's (tested).
 
 ## Pitfalls
+- **The prefix is compared as plain text** with each frame's file name. It is built
+  from `__file__` without resolving symlinks (a symlinked or mapped-drive install
+  would otherwise never match) and ends in a path separator (so a sibling file such
+  as `easy_viz_extra.py` isn't skipped).
 - **`stacklevel` is the wrong tool here.** It counts frames, so it breaks as soon as
   the warning is raised one helper deeper. `skip_file_prefixes` doesn't depend on
   depth.

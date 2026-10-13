@@ -61,9 +61,10 @@ reads valid options from the same alias the signature uses.
 - `__all__` is exactly the set of public names in `__init__.py` (tested).
 - Layering: `stats/` never imports `plotly` or `plots/`; `theme/` never imports
   `plots/` (tested).
-- Every user table goes through `_data`; every message is built by
-  `_validate.message`; every warning is an `EasyVizWarning` issued through
-  `_warnings.warn`.
+- Every user table goes through `_data`. Every option check that more than one
+  module needs (choices, conflicts, positive whole numbers, ranges) lives in
+  `_validate`, and every message follows its format. Every warning is an
+  `EasyVizWarning` issued through `_warnings.warn`.
 - `ROLES` and the trace-role table in the conventions name the same roles (tested).
 - Global state is limited to the active theme and the active config. Both are
   immutable values, replaced whole by `set_theme` / `set_config`

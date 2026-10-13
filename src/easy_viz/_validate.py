@@ -162,7 +162,7 @@ def check_range(
     func, param : str
         Public function and parameter names, for the message.
     value : object
-        The value received. ``bool`` and NaN are rejected.
+        The value received. ``bool``, NaN and infinity are rejected.
     low, high : float or None, default None
         Bounds; ``None`` means unbounded on that side.
     include_low, include_high : bool, default True
@@ -179,7 +179,7 @@ def check_range(
         if not isinstance(value, bool) and isinstance(value, Real)
         else math.nan
     )
-    ok = not math.isnan(number)
+    ok = math.isfinite(number)
     if ok and low is not None:
         ok = number >= low if include_low else number > low
     if ok and high is not None:

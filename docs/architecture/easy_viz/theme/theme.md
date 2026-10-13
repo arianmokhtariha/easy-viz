@@ -44,8 +44,9 @@ Lists given for the colorway or a scale are stored as tuples (`object.__setattr_
 inside the frozen class), so users can write natural lists and the theme stays
 hashable.
 
-**`build_template(theme)`** is cached with `functools.cache` (a theme is immutable
-and hashable). The template is built from scratch, not layered on `plotly_dark` or
+**`build_template(theme)`** is cached with `functools.lru_cache(maxsize=32)` (a theme
+is immutable and hashable; the bound keeps a session that builds many custom themes
+from holding them all). The template is built from scratch, not layered on `plotly_dark` or
 `plotly_white`, so every value comes from a `Theme` field. It sets:
 - colorway, both backgrounds, the base font
 - title font, subtitle font and title placement: centred, top-anchored at

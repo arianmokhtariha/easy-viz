@@ -20,8 +20,8 @@ The figure-level layout every plot shares, so no plot re-solves it:
     starves large grids (at `0.12`, nine rows leave ~11 px per row). Gaps are
     instead pixel budgets from the theme (`row_gap_px`, `col_gap_px`), converted
     against the figure height and width.
-  - With `height=None`, the height is `n_rows * (row_plot_px + row_gap_px)`, so every
-    row gets the same drawing area however many rows there are.
+  - With `height=None`, the height is `n_rows * (row_plot_px + row_gap_px)`, as in
+    the original module (but see Pitfalls on small grids).
   - Each spacing is capped at `0.5 / (count - 1)`: gaps never take more than half
     the axis, even under a small forced `height`, and `make_subplots` never rejects
     the value.
@@ -50,6 +50,12 @@ The figure-level layout every plot shares, so no plot re-solves it:
 - The config width is read at call time, so `set_config` affects later calls.
 
 ## Pitfalls
+- **The auto height leaves out the fixed margins** (the title block, up to about
+  120 px, and Plotly's bottom margin). That overhead is shared by all rows, so a
+  one-row grid gets noticeably less than `row_plot_px` of drawing height while a
+  five-row grid gets close to it. This keeps the original module's behaviour; revisit
+  it in the visual review of the first ported grid plot, by adding the margins to the
+  auto height.
 - **The gaps are converted against the full figure size, margins included**, as in
   the original module, while Plotly applies the fraction to the plot area inside the
   margins. Drawn gaps come out about 80% of their nominal px. The budgets were tuned

@@ -65,13 +65,18 @@ function name used in messages):
    nothing dropped means no warning; everything dropped raises `ValueError`.
 5. **`aggregate(frame, func, keys, values, agg)`** with `keys` mapping parameter to
    grouping column (`x`, `color`, facets) and `values` the `y` column(s):
+   - First, in every mode: an invalid `agg` raises the standard `check_choice`
+     message (so a plot that forgot to validate still fails clearly), repeated
+     `values` are de-duplicated, and a `values` column that is also a key raises
+     `ValueError`.
    - `agg=None`: raises `ValueError` if a key combination repeats, saying how many
      repeat, showing the first one and naming `agg`. Otherwise returns the frame
      unchanged.
    - `agg` set: one row per key combination with the `values` aggregated. `"count"`
      counts rows per `values` column, or into one column named `count` (suffixed with
      `_` if a key already has that name) when there is no `y`. Other columns (hover)
-     are dropped: a group has no single value for them. Any other `agg` without `y`
+     are dropped, with an `EasyVizWarning` naming them: a group has no single value
+     for them, and an option is never silently ignored. Any other `agg` without `y`
      raises `ValueError`.
    - Returns the frame and the list of value column names to draw.
 

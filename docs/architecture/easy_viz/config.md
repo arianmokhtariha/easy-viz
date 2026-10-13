@@ -27,8 +27,9 @@ helper; this replaces both.
   object before swapping it in, so a rejected call (for example a valid width with a
   negative scale) changes nothing, not even the valid half.
 - `Config` is immutable: the only way to change a default is `set_config`.
-- `width` is a positive `int`; `export_scale` is a positive `int` or `float`. `bool`
-  is rejected for both.
+- `width` is a positive `int`; `export_scale` is a positive, finite `int` or `float`.
+  `bool` is rejected for both. The checks are `_validate.check_positive_int` and
+  `check_range`, so every invalid value raises `ValueError` in the standard format.
 - Messages follow the conventions format and name the parameter and the value.
 
 ## Pitfalls

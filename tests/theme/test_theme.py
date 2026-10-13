@@ -162,8 +162,14 @@ def test_lists_are_stored_as_tuples_so_a_theme_stays_hashable() -> None:
             "Theme: diverging_scale positions must rise, got 0.5 after 0.6",
         ),
         ({"severity_scale": ((0, "#000"),)}, "must run from position 0"),
-        ({"font_size": 0}, "Theme: font_size=0 must be a positive whole number"),
-        ({"row_gap_px": True}, "Theme: row_gap_px=True must be a positive whole"),
+        ({"font_size": 0}, "Theme: font_size=0 is not valid. Use a whole number"),
+        ({"row_gap_px": True}, "Theme: row_gap_px=True is not valid"),
+        (
+            # NaN compares False with everything, so an ordering check alone
+            # would let it through.
+            {"sequential_scale": ((0, "#000"), (float("nan"), "#888"), (1, "#fff"))},
+            "Theme: sequential_scale position=nan is not valid",
+        ),
         ({"font_family": " "}, "Theme: font_family=' ' must be a non-empty string"),
     ],
 )

@@ -359,9 +359,10 @@ def test_median_with_two_keys_and_wide_y(make_frame: MakeFrame) -> None:
 def test_count_without_y(make_frame: MakeFrame) -> None:
     native = make_frame({"count": ["x", "y", "x"], "hover": [1, 2, 3]})
     frame = load(native, "f", {"x": "count", "hover": "hover"})
-    out, values = aggregate(frame, "f", {"x": "count"}, [], "count")
-    # The key is already called "count", so the result column gets a new name;
-    # hover columns are dropped (a group has no single hover value).
+    # hover columns are dropped (a group has no single hover value), announced.
+    with pytest.warns(EasyVizWarning, match=r"so 'hover' has no single value"):
+        out, values = aggregate(frame, "f", {"x": "count"}, [], "count")
+    # The key is already called "count", so the result column gets a new name.
     assert values == ["count_"]
     assert out.columns == ["count", "count_"]
     assert out["count_"].to_list() == [2, 1]
@@ -371,6 +372,26 @@ def test_agg_other_than_count_needs_y(make_frame: MakeFrame) -> None:
     frame = load(make_frame(SALES), "bar_plot", {"x": "region"})
     with pytest.raises(ValueError, match=r"^bar_plot: agg='sum' needs y\. Set y"):
         aggregate(frame, "bar_plot", {"x": "region"}, [], "sum")
+
+
+def test_value_columns_are_deduplicated_and_never_keys(make_frame: MakeFrame) -> None:
+    frame = load(make_frame(SALES), "bar_plot", {"x": "region", "y": "revenue"})
+    # Backends would raise their own duplicate-column errors (or, for median,
+    # return the column twice).
+    for agg in ("sum", "median"):
+        out, values = aggregate(
+            frame, "bar_plot", {"x": "region"}, ["revenue", "revenue"], agg
+        )
+        assert values == ["revenue"]
+        assert out.columns == ["region", "revenue"]
+    with pytest.raises(ValueError, match=r"^bar_plot: 'region' is used both as y"):
+        aggregate(frame, "bar_plot", {"x": "region"}, ["region"], "count")
+
+
+def test_invalid_agg_raises_the_standard_message(make_frame: MakeFrame) -> None:
+    frame = load(make_frame(SALES), "bar_plot", {"x": "region", "y": "revenue"})
+    with pytest.raises(ValueError, match=r"^bar_plot: agg='avg' is not valid\. Use"):
+        aggregate(frame, "bar_plot", {"x": "region"}, ["revenue"], "avg")  # type: ignore[arg-type]
 
 
 def test_repeated_keys_without_agg_raise(make_frame: MakeFrame) -> None:
