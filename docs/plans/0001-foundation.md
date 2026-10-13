@@ -1,6 +1,6 @@
 # Plan 0001: Foundation
 
-**Status:** proposed
+**Status:** approved
 
 ## Goal
 Build the shared machinery every plot function depends on, before porting any plot.

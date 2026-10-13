@@ -3,7 +3,7 @@
 Where easy-viz stands. Updated in the PR that changes it.
 
 ## Now
-- [Plan 0001: Foundation](docs/plans/0001-foundation.md) (proposed)
+- [Plan 0001: Foundation](docs/plans/0001-foundation.md) (approved)
 
 ## Next
 - [Plan 0002: Showcase dataset and gallery](docs/plans/0002-showcase-data-and-gallery.md) (proposed)
