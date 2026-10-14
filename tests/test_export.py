@@ -4,6 +4,7 @@ Tests marked ``export`` run real kaleido exports and skip when Chrome is missing
 The rest need no Chrome: they check validation and how Plotly is called.
 """
 
+import re
 import struct
 import sys
 from collections.abc import Callable, Iterator
@@ -14,7 +15,7 @@ import plotly.io as pio
 import pytest
 
 from easy_viz.config import get_config, set_config
-from easy_viz.export import save, save_many
+from easy_viz.export import _FORMATS, _VECTOR_FORMATS, save, save_many
 
 
 @pytest.fixture(autouse=True)
@@ -111,6 +112,18 @@ def test_save_many_keeps_each_figures_own_size_and_input_order(
 
     assert [p.name for p in written] == ["wide.png", "narrow.png"]
     assert [png_size(p)[0] for p in written] == [500, 200]
+
+
+@pytest.mark.export
+@pytest.mark.usefixtures("chrome")
+def test_svg_is_written_at_the_figures_true_size_by_default(tmp_path: Path) -> None:
+    # kaleido multiplies an SVG's page size by the scale; the default 2x of
+    # export_scale must not double it.
+    written = save(make_fig(width=400, height=300), tmp_path / "chart.svg")
+    # The root tag holds the page size; inner shapes repeat the figure's numbers.
+    root = re.search(r"<svg[^>]*>", written.read_text(encoding="utf-8"))
+    assert root is not None
+    assert 'width="400" height="300"' in root.group(0)
 
 
 # --- no Chrome needed -------------------------------------------------------------
@@ -231,3 +244,44 @@ def test_missing_kaleido_gives_the_install_hint(
     monkeypatch.setitem(sys.modules, "kaleido", None)  # makes `import kaleido` fail
     with pytest.raises(ImportError, match=r'pip install "easy-viz\[export\]"'):
         export(tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("image_format", "scale", "expected"),
+    [
+        ("png", None, 3),  # raster: the configured export_scale
+        ("webp", None, 3),
+        ("svg", None, 1),  # vector: true size, whatever export_scale says
+        ("pdf", None, 1),
+        ("svg", 2, 2),  # an explicit scale applies to every format
+        ("png", 1.5, 1.5),
+    ],
+)
+def test_default_scale_depends_on_the_format(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    image_format: str,
+    scale: float | None,
+    expected: float,
+) -> None:
+    scales: list[object] = []
+    monkeypatch.setattr(pio, "write_image", lambda *a, **kw: scales.append(kw["scale"]))
+    monkeypatch.setattr(
+        pio, "write_images", lambda *a, **kw: scales.append(kw["scale"])
+    )
+    set_config(export_scale=3)
+
+    save(make_fig(), tmp_path / f"chart.{image_format}", scale=scale)
+    save_many(
+        {"chart": make_fig()},
+        tmp_path,
+        format=image_format,  # type: ignore[arg-type]
+        scale=scale,
+    )
+
+    assert scales == [expected, expected]
+
+
+def test_vector_formats_are_supported_formats() -> None:
+    # A typo here would silently send a vector format down the raster path.
+    assert _VECTOR_FORMATS.issubset(_FORMATS)

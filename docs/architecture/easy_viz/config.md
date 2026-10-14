@@ -7,7 +7,7 @@ Hold the few output defaults that every plot and every export shares, so a user
 changes them once instead of passing them to each call:
 - `width`: figure width in px for plots called with `width=None` (default 1400)
 - `export_scale`: resolution multiplier for [`save` and `save_many`](export.md)
-  (default 2.0)
+  to raster formats (default 2.0); `svg` and `pdf` are written at true size
 
 The legacy module repeated `width=1400` in every function and `scale=2` in its save
 helper; this replaces both.
