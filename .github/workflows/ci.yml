@@ -57,3 +57,38 @@ jobs:
 
       - name: Test
         run: uv run pytest
+
+  # The lower bounds in pyproject.toml promise that easy-viz works with those
+  # versions. The checks job only tests the newest (locked) ones, so this job
+  # installs every runtime dependency at its lowest allowed version and tests
+  # against that, on the oldest supported Python (where old releases are likeliest
+  # to exist). Dev tools stay locked: they never reach users.
+  lowest:
+    name: Lowest dependencies (Python 3.13)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UV_LOCKED: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv and Python 3.13
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      # Reads the runtime dependencies and extras from pyproject.toml and picks the
+      # lowest version each lower bound allows.
+      - name: Downgrade runtime dependencies to their lower bounds
+        run: uv pip install -r pyproject.toml --all-extras --resolution lowest-direct
+
+      - name: Show the versions under test
+        run: uv pip list
+
+      # --no-sync keeps the downgraded versions instead of restoring the lock.
+      - name: Test
+        run: uv run --no-sync pytest
