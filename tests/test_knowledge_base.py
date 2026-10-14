@@ -30,28 +30,19 @@ Rules on the real repository
   ``docs/architecture/index.md``.
 * Every plan in ``docs/plans/`` has ``**Status:**`` ``proposed``, ``approved`` or
   ``in progress``.
-* No file tracked by git (or about to be) links to, or names the path of, an agent
-  guide. Excluding them is legitimate: ``"**/<guide>"`` globs in ``pyproject.toml`` and
-  bare names in ``.gitignore`` or a Sphinx config pass. In Markdown, any mention fails.
-* Local only (skipped when the root guide is absent, as in CI and fresh clones, because
-  guides are gitignored): every guide on disk is listed in the root guide's table,
-  every listed guide exists, and the relative links and ``@imports`` inside guides
-  resolve.
+* Every agent guide on disk is listed in the root guide's table, every listed guide
+  exists, and the relative links and ``@imports`` inside guides resolve.
 """
 
 import re
-import subprocess
 from collections import deque
 from collections.abc import Callable, Iterator
 from pathlib import Path, PurePosixPath
 from urllib.parse import unquote
 
-import pytest
-
 import easy_viz
 
 ROOT = Path(__file__).resolve().parents[1]
-SELF = PurePosixPath("tests/test_knowledge_base.py")
 
 ARCH = PurePosixPath("docs/architecture")
 ARCH_INDEX = ARCH / "index.md"
@@ -63,7 +54,6 @@ ARCH_RENAMED = {"ci": ".github"}  # architecture directory -> repository directo
 
 GUIDE_NAMES = ("CLAUDE.md", "CLAUDE.local.md")
 SKIPPED_DIRS = frozenset({"legacy", "node_modules", "build", "dist", "_build"})
-STRICT_SUFFIXES = (".md", ".rst", ".txt", ".ipynb")  # prose: no mention of a guide
 
 FENCE = re.compile(r"^\s*(?:```|~~~)")
 INLINE_CODE = re.compile(r"`[^`\n]*`")
@@ -74,13 +64,6 @@ IMPORT = re.compile(r"(?<![\w`@])@((?:\.{1,2}/|[\w-]+/)[^\s)`]*)")
 HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
 COVERS = re.compile(r"^Covers:\s*(.*)$")
 STATUS = re.compile(r"^\*\*Status:\*\*\s*(.*?)\s*$", re.MULTILINE)
-
-_GUIDE = r"CLAUDE(?:\.local)?\.md"
-GUIDE_LINK = re.compile(rf"\]\([^)]*{_GUIDE}")
-# A path with a real directory part (``a/b/<guide>``, ``../<guide>``); a glob such as
-# ``**/<guide>`` has no literal directory before the slash and does not match.
-GUIDE_PATH = re.compile(rf"(?<![\w*])(?:[\w.~-]+/)+{_GUIDE}")
-GUIDE_NAME = re.compile(rf"\b{_GUIDE}")
 
 
 # --- Files -----------------------------------------------------------------------
@@ -497,67 +480,7 @@ def check_plan_status(root: Path) -> list[str]:
     return problems
 
 
-def check_no_guide_references(
-    root: Path, files: list[PurePosixPath], exclude: frozenset[PurePosixPath]
-) -> list[str]:
-    """Rule: no file in ``files`` links to or names an agent guide's path.
-
-    Guides are gitignored, so a reference would dangle for every other reader. Config
-    files may *exclude* guides (bare names, ``**/`` globs); prose files may not even
-    name them.
-    """
-    problems = []
-    for file in files:
-        if file in exclude or not (root / file).is_file():
-            continue
-        try:
-            text = read(root, file)
-        except (UnicodeDecodeError, OSError):
-            continue  # binary file
-        strict = file.suffix in STRICT_SUFFIXES
-        for number, line in enumerate(text.splitlines(), start=1):
-            if GUIDE_LINK.search(line):
-                what = "links to an agent guide"
-            elif GUIDE_PATH.search(line):
-                what = "names the path of an agent guide"
-            elif strict and GUIDE_NAME.search(line):
-                what = "mentions an agent guide"
-            else:
-                continue
-            problems.append(
-                f"{file}:{number}: {what}. Guides are local-only and gitignored, so "
-                f"the reference would dangle. Remove it (config files may only "
-                f"exclude guides, e.g. a '**/' glob)."
-            )
-    return problems
-
-
-def repository_files(root: Path) -> list[PurePosixPath] | None:
-    """Files git tracks plus those it would track; None if git can't say."""
-    try:
-        result = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(root),
-                "ls-files",
-                "-z",
-                "--cached",
-                "--others",
-                "--exclude-standard",
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError:
-        return None
-    if result.returncode != 0:
-        return None
-    return [PurePosixPath(p) for p in result.stdout.split("\0") if p]
-
-
-# --- Rules: local guides (skipped when the root guide is absent) -----------------
+# --- Rules: agent guides ---------------------------------------------------------
 
 
 def guides_on_disk(root: Path) -> list[PurePosixPath]:
@@ -627,12 +550,6 @@ def assert_clean(problems: list[str]) -> None:
     assert not problems, "\n" + "\n".join(problems)
 
 
-needs_local_guides = pytest.mark.skipif(
-    not (ROOT / "CLAUDE.md").is_file(),
-    reason="the root agent guide is absent (CI, fresh clone): guides are gitignored",
-)
-
-
 def test_relative_links_resolve() -> None:
     assert_clean(check_links(ROOT))
 
@@ -665,19 +582,10 @@ def test_plans_have_a_valid_status() -> None:
     assert_clean(check_plan_status(ROOT))
 
 
-def test_no_tracked_file_references_a_guide() -> None:
-    files = repository_files(ROOT)
-    if files is None:
-        pytest.skip("git is unavailable or ROOT is not a git repository")
-    assert_clean(check_no_guide_references(ROOT, files, frozenset({SELF})))
-
-
-@needs_local_guides
 def test_guides_match_the_root_table() -> None:
     assert_clean(check_guide_table(ROOT))
 
 
-@needs_local_guides
 def test_guide_links_resolve() -> None:
     assert_clean(check_guide_links(ROOT))
 
@@ -908,43 +816,6 @@ def test_plan_status_rule(tmp_path: Path) -> None:
     )
     flagged = {p.split(":")[0] for p in check_plan_status(root)}
     assert flagged == {"docs/plans/0002-b.md", "docs/plans/0003-c.md"}
-
-
-def test_guide_reference_rule_separates_exclusion_from_reference(
-    tmp_path: Path,
-) -> None:
-    # Built from parts so this file itself never contains a reference to scan.
-    guide = "CLAUDE" + ".md"
-    local = "CLAUDE" + ".local.md"
-    files = {
-        "pyproject.toml": f'exclude = ["**/{guide}", "{guide}", "{local}"]\n',
-        ".gitignore": f"{guide}\n{local}\n.claude/\n",
-        "docs/conf.py": f'exclude_patterns = ["{guide}"]\n',
-        "README.md": "no reference\n",
-        "docs/a.md": f"see src/easy_viz/{guide} for rules\n",
-        "docs/b.md": f"[guide](../{guide})\n",
-        "docs/c.md": f"the root {guide} says\n",
-        "docs/d.md": f"[x](docs/{local})\n",
-        "src/m.py": f'"""See ./{guide}."""\n',
-        "docs/e.md": f"glob **/{guide} in config is fine in code only\n",
-    }
-    root = build(tmp_path, files)
-    paths = [PurePosixPath(name) for name in files]
-    flagged = {
-        p.split(":")[0] for p in check_no_guide_references(root, paths, frozenset())
-    }
-    assert flagged == {
-        "docs/a.md",
-        "docs/b.md",
-        "docs/c.md",
-        "docs/d.md",
-        "src/m.py",
-        "docs/e.md",
-    }
-    excluded = check_no_guide_references(
-        root, paths, frozenset(PurePosixPath(n) for n in files)
-    )
-    assert excluded == []
 
 
 def test_guide_table_and_link_rules(tmp_path: Path) -> None:
