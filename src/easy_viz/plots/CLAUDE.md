@@ -12,12 +12,25 @@ follows them.
   propose a new family, not to stretch an existing one.
 - **Numbers come from `stats/`.** A plot function validates, prepares data, calls
   stats, builds traces and applies layout. It doesn't compute statistics inline.
+- **The best chart wins, native or custom.** Before designing or porting a plot,
+  look up what current Plotly offers for its chart type through Context7 (root
+  guide, "Library documentation"): trace types and attributes, layout, hover,
+  annotations. Then pick whatever gives the most professional, best-looking and
+  most readable chart:
+  - a native Plotly feature, when it delivers that
+  - a custom construction (own traces, shapes, annotations), when the native
+    feature looks worse, is too limited, or makes the data harder to interpret
+
+  The visual review loop judges the result. Name the choice and the reason in the
+  report's *Why this way*.
 
 ## Porting from `custom_plots.py`
 The original lives at `legacy/custom_plots.py` (local, gitignored). The report charts
 it couldn't produce are in `legacy/conclusions.ipynb`.
 - Read the original before porting. Its behaviour is the specification unless
-  `docs/conventions.md` changes it (e.g. retired parameter names).
+  `docs/conventions.md` changes it (e.g. retired parameter names). Its Plotly code is
+  not: it predates current Plotly, so check each technique against the current
+  documentation.
 - Keep its statistical behaviour exactly: CI methods, seriation, edge-case handling.
   Any intended difference is listed under *Product impact* in the report.
 
