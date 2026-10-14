@@ -37,6 +37,8 @@ in this session need re-reading only if they changed since.
    - `docs/architecture/index.md`, then the docs at the area's mirrored paths
    - the plan being implemented, if any
 6. The code you'll change, and its tests.
+7. The current documentation of every library API the change will use (see
+   "Library documentation" below). Always Plotly for anything that draws.
 
 Then, before the first edit, state in 2–3 sentences:
 - what the task is for, in product terms
@@ -45,6 +47,38 @@ Then, before the first edit, state in 2–3 sentences:
 - anything in them that conflicts with the request
 
 A conflict goes to the product manager before any work starts.
+
+## Library documentation (Context7)
+**Plotly is what easy-viz offers its users:** every chart is only as good as the
+Plotly features behind it. Library knowledge from training data goes stale, so
+current documentation comes from the **Context7 MCP server** (enabled for this project
+in `.claude/settings.json`), not from memory.
+- **When:** before writing or changing code that calls a library's API, and before
+  designing or porting a plot. Always for Plotly. Also for narwhals, numpy, scipy and
+  kaleido, and for dev tools (pytest, uv, ruff, mypy, Sphinx) when their behaviour
+  matters. Not for easy-viz's own code (read it instead) or general Python.
+- **How:** `resolve-library-id`, then `query-docs` with `language="Python"`, one
+  concept per query. Known IDs:
+
+  | Library | Context7 ID | Use it for |
+  |---|---|---|
+  | Plotly for Python | `/plotly/plotly.py` | figures, traces, layout, templates, `plotly.io`, export |
+  | plotly.js | `/plotly/plotly.js` | the full attribute reference and the newest chart features; Python exposes the same attributes |
+  | Plotly docs site | `/plotly/graphing-library-docs` | worked examples per chart type |
+
+  Resolve any other library by name.
+- **Check the version.** Context7 serves the latest documentation, which can be
+  ahead of the lowest version easy-viz supports (the lower bound in `pyproject.toml`,
+  e.g. `plotly>=7.1`). Before using a feature, confirm it exists at that bound (the
+  library's changelog says when it arrived; the `lowest` CI job runs the tests
+  there). If it needs a newer version, raise the bound in the same PR and say so in
+  the report.
+- **The installed library decides.** Where documentation and behaviour disagree,
+  trust a test against the installed version, and record the difference as a pitfall
+  in the architecture doc.
+- **Without Context7** (e.g. a fresh machine without the plugin), use the official
+  documentation (plotly.com/python and the plotly.js reference) and say so in the
+  report.
 
 ## Working model
 - **The owner is the product manager**, a data analyst/scientist, not a software
