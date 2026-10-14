@@ -82,12 +82,35 @@ jobs:
         run: uv sync --all-extras
 
       # Reads the runtime dependencies and extras from pyproject.toml and picks the
-      # lowest version each lower bound allows.
+      # lowest version each lower bound allows. --upgrade makes uv re-resolve:
+      # without it, the newer locked versions already satisfy the bounds and
+      # nothing changes.
       - name: Downgrade runtime dependencies to their lower bounds
-        run: uv pip install -r pyproject.toml --all-extras --resolution lowest-direct
+        run: >-
+          uv pip install -r pyproject.toml --all-extras --resolution lowest-direct
+          --upgrade
 
-      - name: Show the versions under test
-        run: uv pip list
+      # Fails if a dependency is not at its lower bound, so the job can never pass
+      # while testing newer versions than it claims.
+      - name: Check that every runtime dependency is at its lower bound
+        run: |
+          uv run --no-sync python - <<'PY'
+          import tomllib
+          from importlib.metadata import version
+          from packaging.requirements import Requirement
+          from packaging.version import Version
+
+          with open("pyproject.toml", "rb") as file:
+              project = tomllib.load(file)["project"]
+          extras = project.get("optional-dependencies", {}).values()
+          wanted = project["dependencies"] + [r for extra in extras for r in extra]
+          for req in map(Requirement, wanted):
+              lows = [Version(s.version) for s in req.specifier if s.operator == ">="]
+              installed = Version(version(req.name))
+              print(f"{req.name}: {installed} (lower bound {lows[0] if lows else '-'})")
+              if lows and installed != lows[0]:
+                  raise SystemExit(f"{req.name} {installed} is not at its lower bound")
+          PY
 
       # --no-sync keeps the downgraded versions instead of restoring the lock.
       - name: Test
