@@ -52,14 +52,9 @@ target one series' trendline. An unknown role raises: it can only be a bug in
 easy-viz.
 
 **`_typing.py`: shared aliases.** `FrameLike` (any table narwhals accepts, eager or
-lazy), `ArrayLike` (1-D numeric input of the future model-diagnostic plots),
-`Orientation` and `Agg`. The aliases of allowed values are plain assignments, not
-`type` statements, so `typing.get_args` returns their allowed values at runtime:
-`_validate.check_choice` reads valid options from the same alias the signature uses.
-`ArrayLike` is a `type` statement, evaluated only when read: with the oldest
-supported narwhals (2.0, where `IntoSeries` is a string) and numpy (2.1), building
-that union at import time raises `TypeError`, so a plain assignment broke
-`import easy_viz`.
+lazy), `Orientation` and `Agg`. They are plain assignments, not `type` statements, so
+`typing.get_args` returns their allowed values at runtime: `_validate.check_choice`
+reads valid options from the same alias the signature uses.
 
 ## Invariants
 - `__all__` is exactly the set of public names in `__init__.py` (tested).
@@ -78,5 +73,10 @@ that union at import time raises `TypeError`, so a plain assignment broke
 - **The `type` statement hides allowed values.** `typing.get_args` returns nothing
   for an alias made with `type X = Literal[...]`. Aliases used for runtime checks stay
   plain assignments.
+- **Some `narwhals.typing` names are strings in old narwhals.** In narwhals 2.0,
+  `IntoSeries` is the string `'NativeSeries'`, so `X | IntoSeries` raises
+  `TypeError` when evaluated, at import for a plain assignment. Check a new alias
+  that uses narwhals types against the lowest supported narwhals (the `lowest` CI
+  job runs the tests there).
 - **`tag` replaces `meta`.** It overwrites anything already in `trace.meta`; a plot
   that needs extra metadata adds it after tagging.

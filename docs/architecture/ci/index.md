@@ -43,9 +43,10 @@ in `pyproject.toml` make: that easy-viz works with those versions.
 ## Invariants
 - The matrix lists exactly the versions decision 0005 supports. Changing that policy
   changes the matrix in the same PR.
-- Every runtime lower bound is a version that installs from a ready-built package
-  (wheel) on every supported Python, and passes the tests. The `lowest` job enforces
-  both.
+- Every runtime lower bound installs from a ready-built package (wheel) on the
+  oldest supported Python (3.13) and passes the tests there; the `lowest` job
+  enforces both. Newer Pythons are not checked at the bounds: an old release often
+  has no wheel for them, and their resolvers pick newer releases anyway.
 - CI runs the same commands as local development. A check added to the project's
   definition of done is added to the workflow in the same PR.
 

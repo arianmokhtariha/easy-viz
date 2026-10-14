@@ -202,8 +202,9 @@ Summaries only; the records are the source.
 - **Before opening a PR:** once the work is complete and all checks pass, have the
   whole branch reviewed **once** by the `code-reviewer` subagent
   (`.claude/agents/code-reviewer.md`). It audits the branch with the
-  `engineering:code-review` skill (not the built-in `code-review`, which runs as a
-  nested agent) and reports its findings. Fix every real issue it reports; each fix
+  `engineering:code-review` skill from the engineering plugin, or along the same
+  dimensions inline where that plugin isn't installed (never the built-in
+  `code-review`, which runs as a nested agent), and reports its findings. Fix every real issue it reports; each fix
   gets a test that fails without it where the issue is testable, then re-run all
   checks. No second review round: later rounds cost a full review each and find
   mostly low-impact issues. Report a summary of the issues the review found and how

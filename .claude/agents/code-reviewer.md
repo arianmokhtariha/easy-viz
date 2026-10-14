@@ -49,9 +49,11 @@ temp directory, never inside the repository.
    - `docs/product.md`, `docs/conventions.md`, every record in `docs/decisions/`
    - `docs/architecture/index.md` and the architecture doc of every changed module
 3. **Review.** Invoke the `engineering:code-review` skill with the Skill tool,
-   passing the scope from step 1, and apply all of its review dimensions. Never use
-   the built-in `code-review` skill: it runs as a separate agent, which is the
-   nesting forbidden above. Read every changed file in
+   passing the scope from step 1, and apply all of its review dimensions. If that
+   skill is not installed, review inline along the same dimensions: security,
+   performance, correctness (edge cases, error handling, types) and maintainability
+   (naming, duplication, tests, docs). Never use the built-in `code-review` skill:
+   it runs as a separate agent, which is the nesting forbidden above. Read every changed file in
    full, not only the changed lines, and follow callers and callees where behaviour
    depends on them. Also check, specific to this project:
    - product principles and the public function contract in the conventions

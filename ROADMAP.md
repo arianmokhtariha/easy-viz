@@ -24,4 +24,5 @@ Where easy-viz stands. Updated in the PR that changes it.
   trace roles, global config and static export, plus repository-wide checks for
   layering, styling literals, the plot contract and the knowledge base
 - CI: lint, formatting, type checks and tests on Python 3.13–3.15 for every pull
-  request and every push to `main`
+  request and every push to `main`, plus a test run on the lowest dependency versions
+  `pyproject.toml` allows
