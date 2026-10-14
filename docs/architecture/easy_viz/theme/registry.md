@@ -44,7 +44,7 @@ Covers: src/easy_viz/theme/registry.py
 
 ## Pitfalls
 - **The active theme is process-wide state.** Tests that call `set_theme` restore it
-  with a fixture (`restore_theme` in `tests/theme/test_theme.py`), or later tests
+  with a fixture (`restore_theme` in `tests/theme/test_registry.py`), or later tests
   run under the wrong theme.
 - **`resolve_theme` needs `caller`.** Error messages name the user's function, not an
   internal one, so every plot passes its own name.

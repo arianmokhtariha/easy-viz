@@ -34,7 +34,7 @@ Dependencies point one way: `theme/` imports the standard library, `plotly`,
 format). It never imports `plots/`, so any module may import it.
 
 ## Invariants
-Tested on every built-in theme (`tests/theme/test_theme.py`):
+Tested on every built-in theme (`tests/theme/test_registry.py`):
 - `text` and `muted_text` reach 4.5:1 on both `background` and `plot_background`.
 - `reference`, `reference_secondary`, `positive` and `negative` reach 4.5:1 on
   `plot_background`, because plots also use them for call-out text. `text` reaches

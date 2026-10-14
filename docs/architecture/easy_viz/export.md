@@ -57,8 +57,10 @@ What they add:
 - **Plotly treats a falsy `scale`, `width` or `height` as "not given".** `scale=0`
   would silently export at Plotly's default scale, so easy-viz rejects values that
   are not positive.
-- **`scale` has no effect on `svg` and `pdf`**, which are vector formats. It is not
-  an error: users set one scale for a mixed batch.
+- **`scale` also applies to `svg` and `pdf`**: kaleido multiplies their page size
+  (a 400×300 figure at `scale=3` becomes a 1200×900 SVG). With the default
+  `export_scale` of 2, vector files come out at twice the figure's nominal size;
+  `scale=1` gives true-size vector files. Quality is unaffected either way.
 - **File names are checked for portability, not only validity, before any export
   starts.** `save_many` rejects names Windows refuses (`< > : " / \ | ? *`, control
   characters, a trailing dot or space, device names such as `CON` or `NUL.txt`),

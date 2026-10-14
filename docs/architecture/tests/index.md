@@ -1,12 +1,12 @@
 # Tests
 
-Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py
+Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py
 
 ## Responsibilities
 Prove that the library is correct and that the repository stays consistent with
 itself. There are two kinds of test:
 - **Unit tests** (`test_data.py`, `test_validate.py`, `test_layout.py`,
-  `theme/test_theme.py`, ...) mirror the module they test, one file per module.
+  `theme/test_registry.py`, ...) mirror the module they test, one file per module.
 - **Repository-wide checks** sit at the top level and test rules that no single module
   owns: the public-function contract, the layering between sub-packages, the absence of
   styling literals in the plot functions, and the agreement between documentation and

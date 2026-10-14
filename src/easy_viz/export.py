@@ -55,8 +55,9 @@ def save(
         directories are created.
     scale : float or None, default None
         Resolution multiplier: 2 writes a 1400 px wide figure as a 2800 px wide
-        image. ``None`` uses ``export_scale`` from :func:`set_config`. It has no
-        effect on ``svg`` and ``pdf``, which are vector formats.
+        image. ``None`` uses ``export_scale`` from :func:`set_config`. It also
+        scales the page size of ``svg`` and ``pdf`` (2 writes a 1400 px figure
+        as a 2800 px wide SVG), so pass ``scale=1`` for true-size vector files.
     width, height : int or None, default None
         Size in px, overriding the figure's own. ``None`` keeps the figure's size.
 
