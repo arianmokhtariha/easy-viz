@@ -9,7 +9,9 @@ so no change reaches `main` without proving it works on every Python version
 file is the single list of the exact commands and versions.
 
 ## How it works
-One GitHub Actions workflow, `CI`, with one job (`checks`):
+One GitHub Actions workflow, `CI`, with two jobs, `checks` and `lowest`.
+
+**`checks`** runs on the newest locked versions:
 - **Triggers:** every pull request, and every push to `main` (which includes merges).
 - **Matrix:** the job runs once per supported Python version, as parallel jobs named
   `Python <version>`. `fail-fast: false` lets every version finish, so one failure
@@ -26,9 +28,25 @@ One GitHub Actions workflow, `CI`, with one job (`checks`):
 - **Cancelling:** a newer push to a pull request cancels its older run. Runs on `main`
   are never cancelled, so every commit there gets a result.
 
+**`lowest`** (`Lowest dependencies (Python 3.13)`) tests the promise the lower bounds
+in `pyproject.toml` make: that easy-viz works with those versions.
+- It installs the locked environment, then reinstalls every runtime dependency and
+  extra at the lowest version its bound allows (`uv pip install -r pyproject.toml
+  --all-extras --resolution lowest-direct --upgrade --only-binary :all:`). Dev tools
+  stay locked: they never reach users.
+- A step then compares each installed runtime dependency with its lower bound and
+  fails on any difference, and prints the versions under test.
+- The tests run with `uv run --no-sync`, which keeps the downgraded versions.
+- It runs on Python 3.13, the oldest supported version, where old releases are
+  likeliest to have packages.
+
 ## Invariants
 - The matrix lists exactly the versions decision 0005 supports. Changing that policy
   changes the matrix in the same PR.
+- Every runtime lower bound installs from a ready-built package (wheel) on the
+  oldest supported Python (3.13) and passes the tests there; the `lowest` job
+  enforces both. Newer Pythons are not checked at the bounds: an old release often
+  has no wheel for them, and their resolvers pick newer releases anyway.
 - CI runs the same commands as local development. A check added to the project's
   definition of done is added to the workflow in the same PR.
 
@@ -46,5 +64,13 @@ One GitHub Actions workflow, `CI`, with one job (`checks`):
   find it and run in CI instead of skipping as they do on a machine without Chrome.
 - **Pinned SHAs don't update themselves.** Bumping an action means replacing both the
   SHA and its version comment.
+- **`uv pip install` keeps versions that already satisfy a bound.** Without
+  `--upgrade`, the newer locked versions stay, and the job would test nothing new;
+  the bound check exists so this can never pass silently.
+- **A bound with no wheel for the oldest Python is not installable for users.** pip
+  would try to compile it from source. With `--only-binary`, uv skips such a version
+  and the bound check fails instead, naming the dependency. This is how the numpy and
+  scipy bounds were found too low (their first Python 3.13 wheels are 2.1 and
+  1.14.1).
 - **The `docs` dependency group is not installed.** A future docs-build step must add
   `--group docs` to the install step.

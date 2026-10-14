@@ -4,18 +4,12 @@ Aliases are plain assignments (not ``type`` statements) so ``typing.get_args``
 works on them at runtime: validation reads the allowed values from here.
 """
 
-from collections.abc import Sequence
 from typing import Literal
 
-import numpy as np
-import numpy.typing as npt
-from narwhals.typing import IntoFrame, IntoSeries
+from narwhals.typing import IntoFrame
 
 # Any table narwhals accepts, eager or lazy: pandas, polars, pyarrow, ...
 FrameLike = IntoFrame
-
-# 1-D numeric input of the model-diagnostic plots (true labels, scores, ...).
-ArrayLike = Sequence[float] | npt.NDArray[np.number] | IntoSeries
 
 Orientation = Literal["vertical", "horizontal"]
 

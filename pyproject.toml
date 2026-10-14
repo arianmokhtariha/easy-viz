@@ -12,8 +12,9 @@ authors = [{ name = "Arian Mokhtariha" }]
 dependencies = [
     "plotly>=7.1",     # rendering core
     "narwhals>=2.0",   # accepts pandas / polars / pyarrow / ... without depending on them
-    "numpy>=2.0",      # numeric work
-    "scipy>=1.13",     # statistics (KDE, regression, clustering, distributions)
+    "numpy>=2.1",      # numeric work; 2.1 is the first with Python 3.13 wheels
+    "scipy>=1.14.1",   # statistics (KDE, regression, clustering, distributions);
+                       # 1.14.1 is the first with Python 3.13 wheels
 ]
 
 [project.optional-dependencies]
