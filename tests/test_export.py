@@ -15,7 +15,7 @@ import plotly.io as pio
 import pytest
 
 from easy_viz.config import get_config, set_config
-from easy_viz.export import save, save_many
+from easy_viz.export import _FORMATS, _VECTOR_FORMATS, save, save_many
 
 
 @pytest.fixture(autouse=True)
@@ -280,3 +280,8 @@ def test_default_scale_depends_on_the_format(
     )
 
     assert scales == [expected, expected]
+
+
+def test_vector_formats_are_supported_formats() -> None:
+    # A typo here would silently send a vector format down the raster path.
+    assert _VECTOR_FORMATS.issubset(_FORMATS)

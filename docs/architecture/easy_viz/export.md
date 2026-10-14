@@ -72,7 +72,9 @@ What they add:
   figures is more likely a bug than an intended no-op, and a silent empty result is
   the kind of guess the product principles forbid.
 - **`ImageFormat` repeats Plotly's supported list.** `eps`, which Plotly 6 accepted,
-  is gone with kaleido 1.x. If Plotly adds a format, add it to `ImageFormat`.
+  is gone with kaleido 1.x. If Plotly adds a format, add it to `ImageFormat`, and
+  also to `_VECTOR_FORMATS` if it is a vector format, or it is written at
+  `export_scale` times its true size.
 - **Tests that export for real** carry the `export` marker and skip, not fail, when
   kaleido or Chrome is missing (a session fixture tries one tiny export). CI's
   runners have Chrome, so they run there.
