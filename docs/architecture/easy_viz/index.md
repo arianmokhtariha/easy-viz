@@ -53,9 +53,13 @@ easy-viz.
 
 **`_typing.py`: shared aliases.** `FrameLike` (any table narwhals accepts, eager or
 lazy), `ArrayLike` (1-D numeric input of the future model-diagnostic plots),
-`Orientation` and `Agg`. They are plain assignments, not `type` statements, so
-`typing.get_args` returns their allowed values at runtime: `_validate.check_choice`
-reads valid options from the same alias the signature uses.
+`Orientation` and `Agg`. The aliases of allowed values are plain assignments, not
+`type` statements, so `typing.get_args` returns their allowed values at runtime:
+`_validate.check_choice` reads valid options from the same alias the signature uses.
+`ArrayLike` is a `type` statement, evaluated only when read: with the oldest
+supported narwhals (2.0, where `IntoSeries` is a string) and numpy (2.1), building
+that union at import time raises `TypeError`, so a plain assignment broke
+`import easy_viz`.
 
 ## Invariants
 - `__all__` is exactly the set of public names in `__init__.py` (tested).
