@@ -116,7 +116,15 @@ with missing values as NaN: the point where narwhals stops and `stats/` starts.
   reported as `Object`, so their values are inspected; a column mixing text and
   numbers stays `Object` (categorical). Time-zone-aware datetimes in an `object`
   column also stay `Object`: pandas refuses to cast them to a naive dtype, and the
-  values may carry different zones.
+  values may carry different zones. Only pandas-like frames are inspected: polars
+  refuses casts from its own `Object` dtype, so such a column stays `Object` and
+  fails `require_numeric` with the standard message.
+- **A pandas `String` column can still hold numbers.** narwhals reads an `object`
+  column's dtype from a sample of its values, so `parse_time` treats any non-string
+  value as a rejected value instead of passing it to the regular expression.
+- **Read small results with `to_dict(as_series=False)`, not `row()`.** Before
+  narwhals 2.13, `row()` on pyarrow returns pyarrow scalars, and a scalar holding 0
+  is truthy. `to_dict` gives plain Python values on every supported version.
 - **pyarrow parses `2026-02-30` as 2026-03-02** with `str.to_datetime`, and every
   backend wants a different format code for fractional seconds. That is why ISO
   strings are parsed in Python, where invalid dates fail.

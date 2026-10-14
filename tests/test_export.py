@@ -176,6 +176,15 @@ def test_save_rejects_unusable_scale_and_sizes(
         save(make_fig(), tmp_path / "chart.png", **kwargs)  # type: ignore[arg-type]
 
 
+def test_save_error_quotes_the_path_as_typed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Not the resolved absolute path, which the user never wrote.
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError, match=r"^save: path='report/rev\.txt' has '\.txt'"):
+        save(make_fig(), "report/rev.txt")
+
+
 @pytest.mark.parametrize(
     "name",
     # Windows refuses the second line too; caught up front, so a batch never

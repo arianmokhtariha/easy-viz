@@ -239,7 +239,9 @@ def _normalise(frame: Frame) -> Frame:
             target = nw.Float64()
         elif isinstance(dtype, nw.Date):
             target = nw.Datetime()
-        elif isinstance(dtype, nw.Object):
+        elif isinstance(dtype, nw.Object) and frame.implementation.is_pandas_like():
+            # Other backends (polars' Object) refuse these casts; such a column
+            # stays as it is and fails the dtype checks with a clear message.
             target = _object_target(frame[name])
         if target is not None:
             casts.append(nw.col(name).cast(target))
@@ -309,10 +311,12 @@ def parse_time(frame: Frame, func: str, param: str, column: str | None) -> Frame
     # as 2026-02-30) and identical on every backend; time columns have few
     # distinct values even when rows are many.
     parsed: dict[str, dt.datetime] = {}
-    rejected: list[str] = []
+    rejected: list[object] = []
     for text in frame[column].drop_nulls().unique(maintain_order=True).to_list():
         try:
-            if not _ISO_DATE.fullmatch(text):
+            # A pandas object column is typed String from a sample of its
+            # values, so a later number can still turn up here.
+            if not isinstance(text, str) or not _ISO_DATE.fullmatch(text):
                 raise ValueError
             parsed[text] = dt.datetime.fromisoformat(text)
         except ValueError:
@@ -360,14 +364,12 @@ def drop_nulls(frame: Frame, func: str) -> Frame:
         If every row has a missing value.
     """
     masks = {column: _missing(frame, column) for column in frame.columns}
+    # to_dict, not row(0): before narwhals 2.13, row() returns pyarrow scalars,
+    # and a scalar holding 0 is truthy.
     counts = frame.select(
         mask.sum().alias(column) for column, mask in masks.items()
-    ).row(0)
-    per_column = {
-        column: int(count)
-        for column, count in zip(frame.columns, counts, strict=True)
-        if count
-    }
+    ).to_dict(as_series=False)
+    per_column = {column: int(count) for column, (count,) in counts.items() if count}
     if not per_column:
         return frame
     kept = frame.filter(~nw.any_horizontal(*masks.values(), ignore_nulls=False))
@@ -519,11 +521,9 @@ def _check_unique(
     if len(repeats) == 0:
         return
     named = {param: column for param, column in keys.items() if column is not None}
-    first = repeats.row(0)
-    example = ", ".join(
-        f"{column}={_show(first[repeats.columns.index(column)])}"
-        for column in key_columns
-    )
+    # Python values (see drop_nulls), so pyarrow keys show as 'North', not scalars.
+    first = repeats.head(1).to_dict(as_series=False)
+    example = ", ".join(f"{column}={_show(first[column][0])}" for column in key_columns)
     params = list(named)
     what = " and ".join([", ".join(params[:-1]), params[-1]] if params[:-1] else params)
     count = len(repeats)

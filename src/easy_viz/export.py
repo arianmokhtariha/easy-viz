@@ -82,8 +82,8 @@ def save(
     >>> ev.save(fig, "report/revenue.png")  # doctest: +SKIP
     PosixPath('/home/me/report/revenue.png')
     """
+    image_format = _format_of(path)
     target = Path(path).expanduser().resolve()
-    image_format = _format_of(target)
     resolved_scale = _resolve_scale("save", scale)
     _check_pixels("save", "width", width)
     _check_pixels("save", "height", height)
@@ -188,16 +188,18 @@ def save_many(
     return targets
 
 
-def _format_of(target: Path) -> str:
-    """Return the image format named by ``target``'s extension."""
-    extension = target.suffix.lstrip(".").lower()
+def _format_of(path: str | os.PathLike[str]) -> str:
+    """Return the image format named by the extension of ``path``, as given."""
+    suffix = Path(path).suffix
+    extension = suffix.lstrip(".").lower()
     if extension in _FORMATS:
         return extension
-    shown = f"{target.suffix!r}" if target.suffix else "no extension"
+    shown = f"{suffix!r}" if suffix else "no extension"
     raise ValueError(
         message(
             "save",
-            f"path={str(target)!r} has {shown}, which is not a supported image format",
+            f"path={os.fspath(path)!r} has {shown}, which is not a supported image "
+            "format",
             f"End the path with one of: {_FORMAT_LIST} (for example "
             "'report/revenue.png')",
         )

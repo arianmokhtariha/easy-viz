@@ -127,3 +127,25 @@ def test_subtitle_adds_to_the_top_margin_and_empty_text_shows_nothing() -> None:
     )
     assert with_subtitle.layout.margin.t > without.layout.margin.t
     assert without.layout.title.subtitle.text is None
+
+
+def test_each_line_break_adds_a_line_to_the_top_margin() -> None:
+    # A one-line-per-field margin let a <br> subtitle run into the plot below.
+    def margin(title: str, subtitle: str) -> int:
+        fig = go.Figure()
+        apply_base_layout(
+            fig, title=title, subtitle=subtitle, width=None, height=None, theme=DARK
+        )
+        return int(fig.layout.margin.t)
+
+    single = margin("Revenue", "Sum")
+    assert margin("Revenue<br>by region", "Sum") > single
+    # Every spelling Plotly honours counts, so all three add the same height.
+    three_subtitle_lines = {
+        margin("Revenue", f"Sum{tag}2026{tag}warehouse")
+        for tag in ("<br>", "<BR/>", "<br />")
+    }
+    assert len(three_subtitle_lines) == 1
+    assert three_subtitle_lines.pop() - single == round(
+        2 * DARK.subtitle_font_size * 1.5
+    )

@@ -1,6 +1,7 @@
 """Figure layout shared by every plot: title block, sizing, subplot-grid geometry."""
 
 import math
+import re
 from typing import NamedTuple
 
 import plotly.graph_objects as go
@@ -12,6 +13,9 @@ from easy_viz.theme.theme import Theme, build_template
 # Height of one text line as a multiple of its font size: what Plotly needs to stack
 # the title and subtitle without overlap. A typographic ratio, not a style choice.
 _LINE_HEIGHT = 1.5
+
+# The line breaks Plotly honours in text: <br>, <br/>, <br />, any letter case.
+_LINE_BREAK = re.compile(r"<br\s*/?>", re.IGNORECASE)
 
 
 class GridGeometry(NamedTuple):
@@ -126,7 +130,12 @@ def grid_geometry(
     return GridGeometry(n_rows, n_cols, h_spacing, v_spacing, final_height)
 
 
-def _title_margin(theme: Theme, *, title: bool, subtitle: bool) -> int:
+def _line_count(text: str | None) -> int:
+    """Count the lines ``text`` takes, including ``<br>`` breaks; 0 when empty."""
+    return 1 + len(_LINE_BREAK.findall(text)) if text else 0
+
+
+def _title_margin(theme: Theme, *, title: str | None, subtitle: str | None) -> int:
     """Top margin in px that fits the title block and the gap below it.
 
     Parameters
@@ -134,17 +143,17 @@ def _title_margin(theme: Theme, *, title: bool, subtitle: bool) -> int:
     theme : Theme
         Source of the font sizes and the ``title_top_px``/``title_gap_px``
         spacing.
-    title, subtitle : bool
-        Whether each line is shown.
+    title, subtitle : str or None
+        The text shown; each ``<br>`` in it adds a line.
 
     Returns
     -------
     int
         Margin from the figure's top edge to the plot area.
     """
-    lines = (theme.title_font_size if title else 0) + (
-        theme.subtitle_font_size if subtitle else 0
-    )
+    title_px = theme.title_font_size * _line_count(title)
+    subtitle_px = theme.subtitle_font_size * _line_count(subtitle)
+    lines = title_px + subtitle_px
     return round(theme.title_top_px + lines * _LINE_HEIGHT + theme.title_gap_px)
 
 
@@ -162,7 +171,7 @@ def apply_base_layout(
     The title is centred and bold; the subtitle is a smaller, muted second line
     (Plotly's native ``title.subtitle``, so users can restyle it after the
     fact). Both are escaped with :func:`escape_text`. The top margin grows to
-    fit whichever lines are shown.
+    fit whichever lines are shown, including lines added with ``<br>``.
 
     Parameters
     ----------
@@ -186,7 +195,7 @@ def apply_base_layout(
             "text": f"<b>{escape_text(title)}</b>" if title else None,
             "subtitle": {"text": escape_text(subtitle) if subtitle else None},
         },
-        margin={"t": _title_margin(theme, title=bool(title), subtitle=bool(subtitle))},
+        margin={"t": _title_margin(theme, title=title, subtitle=subtitle)},
         width=_width(width),
     )
     if height is not None:

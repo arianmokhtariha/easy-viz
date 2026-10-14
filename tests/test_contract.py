@@ -28,6 +28,7 @@ import pytest
 from conftest import MakeFrame
 
 import easy_viz
+from easy_viz._layout import apply_base_layout
 from easy_viz._meta import ROLES
 from easy_viz.theme import get_theme
 from easy_viz.theme.theme import build_template
@@ -190,9 +191,15 @@ def test_registry_holds_only_exported_distinct_functions() -> None:
 
 
 def _good(df: object, *, title: str | None = None) -> go.Figure:
-    return go.Figure(go.Bar(x=[1], meta={"role": "data", "group": None})).update_layout(
-        title=title
+    fig = go.Figure(go.Bar(x=[1], meta={"role": "data", "group": None}))
+    apply_base_layout(
+        fig, title=title, subtitle=None, width=None, height=None, theme=get_theme()
     )
+    return fig
+
+
+def _unthemed(df: object, *, title: str | None = None) -> go.Figure:
+    return go.Figure(go.Bar(x=[1], meta={"role": "data"})).update_layout(title=title)
 
 
 def _untagged(df: object, *, title: str | None = None) -> go.Figure:
@@ -228,6 +235,7 @@ def _case(function: Callable[..., go.Figure]) -> ContractCase:
         (assert_title_used, _ignores_title),
         (assert_returns_figure, _not_a_figure),
         (assert_input_unchanged, _mutates),
+        (assert_theme_applied, _unthemed),
     ],
 )
 def test_checks_fail_on_a_function_that_breaks_the_contract(
@@ -245,6 +253,7 @@ def test_checks_fail_on_a_function_that_breaks_the_contract(
         assert_input_unchanged,
         assert_traces_have_roles,
         assert_title_used,
+        assert_theme_applied,
     ],
 )
 def test_checks_pass_on_a_function_that_keeps_the_contract(

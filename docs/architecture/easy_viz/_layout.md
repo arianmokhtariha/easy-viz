@@ -37,8 +37,9 @@ The figure-level layout every plot shares, so no plot re-solves it:
   - subtitle: Plotly's native `title.subtitle` (smaller, `muted_text`), escaped. It
     is a real layout property rather than HTML inside the title, so users can
     restyle it with `fig.update_layout(title_subtitle_font_size=...)`.
-  - top margin: `title_top_px` + 1.5 × each shown line's font size + `title_gap_px`,
-    so a two-line title never overlaps the plot or the subplot titles below it
+  - top margin: `title_top_px` + 1.5 × each shown line's font size + `title_gap_px`.
+    Lines are counted, including each `<br>` (any spelling Plotly honours), so a
+    multi-line title block never overlaps the plot or the subplot titles below it
   - `width=None` uses `get_config().width`; `height=None` leaves the height unset, so
     Plotly auto-sizes
   - `None` or `""` for the title or subtitle shows no line and reserves no space

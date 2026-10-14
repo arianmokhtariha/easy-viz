@@ -139,6 +139,16 @@ def test_pandas_object_decimals_and_dates_are_normalised() -> None:
     assert column_kind(frame, "mixed") == "categorical"
 
 
+def test_polars_object_columns_are_not_cast_and_fail_the_dtype_check() -> None:
+    # Polars refuses casts from Object; the user gets easy-viz's message instead.
+    native = pl.DataFrame(
+        {"d": pl.Series([Decimal("1.5"), Decimal("2")], dtype=pl.Object)}
+    )
+    frame = load(native, "f", {"y": "d"})
+    with pytest.raises(TypeError, match=r"^f: y='d' has dtype Object"):
+        require_numeric(frame, "f", {"y": "d"})
+
+
 def test_pandas_object_aware_datetimes_are_left_alone() -> None:
     # Casting them would fail inside pandas (zones can differ per value).
     aware = dt.datetime(2026, 1, 1, tzinfo=dt.UTC)
@@ -266,6 +276,17 @@ def test_partial_iso_dates_stay_categorical_with_a_warning(
         f"not ISO dates (e.g. {bad}), so it is drawn as categories. Fix or filter "
         "those values in the query to get a time axis."
     )
+    assert column_kind(out, "t") == "categorical"
+
+
+def test_a_number_inside_a_pandas_string_column_is_a_rejected_value() -> None:
+    # pandas reports the dtype from a sample of values, so a column typed String
+    # can still hold a number further down.
+    values = ["2026-01-31"] * 200 + [3.5]
+    frame = load(pd.DataFrame({"t": pd.Series(values, dtype=object)}), "f", {"x": "t"})
+    assert isinstance(frame.schema["t"], nw.String)
+    with pytest.warns(EasyVizWarning, match=r"1 of its 2 .* \(e\.g\. 3\.5\)"):
+        out = parse_time(frame, "f", "x", "t")
     assert column_kind(out, "t") == "categorical"
 
 
