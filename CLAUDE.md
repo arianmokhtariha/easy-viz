@@ -37,8 +37,8 @@ in this session need re-reading only if they changed since.
    - `docs/architecture/index.md`, then the docs at the area's mirrored paths
    - the plan being implemented, if any
 6. The code you'll change, and its tests.
-7. The current documentation of every library API the change will use (see
-   "Library documentation" below). Always Plotly for anything that draws.
+7. Current library documentation, when the change needs it (see "Library
+   documentation" below).
 
 Then, before the first edit, state in 2–3 sentences:
 - what the task is for, in product terms
@@ -53,10 +53,14 @@ A conflict goes to the product manager before any work starts.
 Plotly features behind it. Library knowledge from training data goes stale, so
 current documentation comes from the **Context7 MCP server** (enabled for this project
 in `.claude/settings.json`), not from memory.
-- **When:** before writing or changing code that calls a library's API, and before
-  designing or porting a plot. Always for Plotly. Also for narwhals, numpy, scipy and
-  kaleido, and for dev tools (pytest, uv, ruff, mypy, Sphinx) when their behaviour
-  matters. Not for easy-viz's own code (read it instead) or general Python.
+- **When:** only where current documentation can change the result.
+  - **Plotly:** when designing or porting a plot, and when using a Plotly feature
+    the codebase doesn't use yet or whose current behaviour you're unsure of.
+  - **Any other library** (narwhals, numpy, scipy, kaleido, dev tools): only when the
+    work leans on that library's specific features or behaviour, e.g. an API you
+    haven't used here before, a version-dependent detail, or a bug that may be the
+    library's. Routine calls the codebase already makes need no lookup.
+  - Never for easy-viz's own code (read it instead) or general Python.
 - **How:** `resolve-library-id`, then `query-docs` with `language="Python"`, one
   concept per query. Known IDs:
 

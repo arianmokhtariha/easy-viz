@@ -12,12 +12,17 @@ follows them.
   propose a new family, not to stretch an existing one.
 - **Numbers come from `stats/`.** A plot function validates, prepares data, calls
   stats, builds traces and applies layout. It doesn't compute statistics inline.
-- **Plotly's current features first.** Before designing or porting a plot, query the
-  current Plotly documentation for its chart type through Context7 (root guide,
-  "Library documentation"): trace types and attributes, layout, hover, annotations.
-  Prefer a native Plotly feature over a hand-built workaround (e.g. `title.subtitle`
-  over a positioned annotation), and over the legacy module's approach when Plotly
-  now does it better. Name the features adopted in the report's *Why this way*.
+- **The best chart wins, native or custom.** Before designing or porting a plot,
+  look up what current Plotly offers for its chart type through Context7 (root
+  guide, "Library documentation"): trace types and attributes, layout, hover,
+  annotations. Then pick whatever gives the most professional, best-looking and
+  most readable chart:
+  - a native Plotly feature, when it delivers that
+  - a custom construction (own traces, shapes, annotations), when the native
+    feature looks worse, is too limited, or makes the data harder to interpret
+
+  The visual review loop judges the result. Name the choice and the reason in the
+  report's *Why this way*.
 
 ## Porting from `custom_plots.py`
 The original lives at `legacy/custom_plots.py` (local, gitignored). The report charts
