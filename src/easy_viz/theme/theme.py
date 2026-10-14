@@ -7,7 +7,7 @@ from itertools import pairwise
 
 import plotly.graph_objects as go
 
-from easy_viz._validate import check_positive_int, check_range
+from easy_viz._validate import check_positive_int, check_range, message
 from easy_viz.theme._color import ACCEPTED_FORMS, is_color
 
 type Color = str
@@ -158,7 +158,7 @@ class Theme:
                 colorway = _as_tuple(name, value)
                 if not colorway:
                     raise ValueError(
-                        f"Theme: {name} is empty. Give at least one colour."
+                        message("Theme", f"{name} is empty", "Give at least one colour")
                     )
                 for color in colorway:
                     _check_color(name, color)
@@ -170,13 +170,19 @@ class Theme:
             elif field.type is str:
                 if not isinstance(value, str) or not value.strip():
                     raise ValueError(
-                        f"Theme: {name}={value!r} must be a non-empty string. "
-                        "Pass a CSS font list such as 'Arial, sans-serif'."
+                        message(
+                            "Theme",
+                            f"{name}={value!r} must be a non-empty string",
+                            "Pass a CSS font list such as 'Arial, sans-serif'",
+                        )
                     )
             else:  # pragma: no cover - fails at import, when a built-in is made
                 raise TypeError(
-                    f"Theme: field {name} has a type with no validation rule. "
-                    "Declare it as Color, ColorScale, Px or str."
+                    message(
+                        "Theme",
+                        f"field {name} has a type with no validation rule",
+                        "Declare it as Color, ColorScale, Px or str",
+                    )
                 )
 
 
@@ -184,8 +190,11 @@ def _as_tuple(name: str, value: object) -> tuple[object, ...]:
     """Return a list or tuple as a tuple; reject anything else."""
     if isinstance(value, str) or not isinstance(value, Sequence):
         raise TypeError(
-            f"Theme: {name} must be a list or tuple, got {value!r}. "
-            "Wrap the values in a list."
+            message(
+                "Theme",
+                f"{name} must be a list or tuple, got {value!r}",
+                "Wrap the values in a list",
+            )
         )
     return tuple(value)
 
@@ -194,8 +203,11 @@ def _check_color(name: str, value: object) -> None:
     """Raise unless ``value`` is a colour string easy-viz can read."""
     if not isinstance(value, str) or not is_color(value):
         raise ValueError(
-            f"Theme: {name}={value!r} is not a colour easy-viz can read. "
-            f"Use {ACCEPTED_FORMS}."
+            message(
+                "Theme",
+                f"{name}={value!r} is not a colour easy-viz can read",
+                f"Use {ACCEPTED_FORMS}",
+            )
         )
 
 
@@ -205,8 +217,11 @@ def _checked_scale(name: str, value: object) -> ColorScale:
     for stop in _as_tuple(name, value):
         if isinstance(stop, str) or not isinstance(stop, Sequence) or len(stop) != 2:
             raise ValueError(
-                f"Theme: {name} has the stop {stop!r}. "
-                "Write each stop as (position, colour)."
+                message(
+                    "Theme",
+                    f"{name} has the stop {stop!r}",
+                    "Write each stop as (position, colour)",
+                )
             )
         position, color = stop
         check_range("Theme", f"{name} position", position, low=0, high=1)
@@ -215,14 +230,20 @@ def _checked_scale(name: str, value: object) -> ColorScale:
     if len(stops) < 2 or stops[0][0] != 0 or stops[-1][0] != 1:
         positions = [p for p, _ in stops]
         raise ValueError(
-            f"Theme: {name} must run from position 0 to position 1, got "
-            f"{positions}. Start the first stop at 0 and end the last at 1."
+            message(
+                "Theme",
+                f"{name} must run from position 0 to position 1, got {positions}",
+                "Start the first stop at 0 and end the last at 1",
+            )
         )
     for (before, _), (after, _) in pairwise(stops):
         if after <= before:
             raise ValueError(
-                f"Theme: {name} positions must rise, got {after} after {before}. "
-                "List the stops in ascending order."
+                message(
+                    "Theme",
+                    f"{name} positions must rise, got {after} after {before}",
+                    "List the stops in ascending order",
+                )
             )
     return tuple(stops)
 

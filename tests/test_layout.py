@@ -64,6 +64,19 @@ def test_grid_needs_a_plot_and_a_column(n_plots: int, n_cols: int) -> None:
         grid_geometry(n_plots, n_cols, width=1400, height=None, theme=DARK)
 
 
+@pytest.mark.parametrize(
+    ("width", "height", "named"),
+    [(1400, 0, "height=0"), (0, None, "width=0"), (1400, -5, "height=-5")],
+)
+def test_grid_rejects_sizes_it_would_divide_by(
+    width: int, height: int | None, named: str
+) -> None:
+    # Unchecked, height=0 is a ZeroDivisionError and negatives give negative
+    # spacings that Plotly rejects with an unrelated message.
+    with pytest.raises(ValueError, match=rf"^grid_geometry: {named} is not valid"):
+        grid_geometry(4, 2, width=width, height=height, theme=DARK)
+
+
 @pytest.mark.usefixtures("config_width_900")
 def test_width_none_uses_config() -> None:
     g = grid_geometry(2, 2, width=None, height=None, theme=DARK)

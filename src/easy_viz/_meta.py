@@ -4,6 +4,8 @@ from typing import Literal, get_args
 
 from plotly.basedatatypes import BaseTraceType
 
+from easy_viz._validate import message
+
 # The vocabulary is documented in docs/conventions.md (Trace roles); a new role
 # is added there and here in the same change.
 Role = Literal[
@@ -44,7 +46,9 @@ def tag[T: BaseTraceType](trace: T, role: Role, group: str | None = None) -> T:
     """
     if role not in ROLES:
         raise ValueError(
-            f"tag: unknown trace role {role!r}. Use one of {sorted(ROLES)}."
+            message(
+                "tag", f"unknown trace role {role!r}", f"Use one of {sorted(ROLES)}"
+            )
         )
     trace.meta = {"role": role, "group": group}
     return trace

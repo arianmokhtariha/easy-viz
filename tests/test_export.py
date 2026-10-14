@@ -130,7 +130,8 @@ def test_save_many_makes_one_batch_call_with_sizes_and_config_scale(
     set_config(export_scale=3)
     figs = {"a": make_fig(width=500, height=None), "b": make_fig(width=200)}
 
-    written = save_many(figs, tmp_path / "new_dir", format="webp")
+    # Upper case works, as it does for save()'s file extension.
+    written = save_many(figs, tmp_path / "new_dir", format="WEBP")  # type: ignore[arg-type]
 
     assert len(calls) == 1  # one call = one Chrome start
     (call,) = calls

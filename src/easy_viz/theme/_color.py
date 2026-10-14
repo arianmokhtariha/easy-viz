@@ -3,11 +3,16 @@
 import re
 from typing import NamedTuple
 
+from easy_viz._validate import check_range, message
+
 # The colour forms a theme accepts. CSS colour names ("white") are left out on
 # purpose: reading them would need a 148-entry lookup table, and hex says the same
 # thing unambiguously.
 _HEX = re.compile(r"#(?P<digits>[0-9a-fA-F]{3}|[0-9a-fA-F]{6})")
 _FUNCTION = re.compile(r"(?P<name>rgba?)\((?P<args>[^()]*)\)")
+# Plain decimals only: Plotly's colour validator rejects "1e2", "-0" and "+5",
+# which float() would accept.
+_NUMBER = re.compile(r"\d+(?:\.\d*)?|\.\d+")
 
 ACCEPTED_FORMS = "hex ('#1a2b3c' or '#abc'), 'rgb(r, g, b)' or 'rgba(r, g, b, a)'"
 
@@ -50,16 +55,19 @@ def parse_color(color: str) -> RGBA:
     if match := _FUNCTION.fullmatch(text):
         parts = [p.strip() for p in match["args"].split(",")]
         expected = 4 if match["name"] == "rgba" else 3
-        try:
-            values = [float(p) for p in parts]
-        except ValueError:
-            values = []
+        values = [float(p) for p in parts if _NUMBER.fullmatch(p)]
         if len(values) == expected:
             r, g, b = values[:3]
             a = values[3] if expected == 4 else 1.0
             if all(0 <= c <= 255 for c in (r, g, b)) and 0 <= a <= 1:
                 return RGBA(r, g, b, a)
-    raise ValueError(f"{color!r} is not a colour in a form easy-viz reads")
+    raise ValueError(
+        message(
+            "parse_color",
+            f"{color!r} is not a colour easy-viz reads",
+            f"Use {ACCEPTED_FORMS}",
+        )
+    )
 
 
 def is_color(color: str) -> bool:
@@ -86,10 +94,7 @@ def with_alpha(color: str, alpha: float) -> str:
     str
         ``"rgba(r,g,b,alpha)"``.
     """
-    if not 0 <= alpha <= 1:
-        raise ValueError(
-            f"with_alpha: alpha={alpha} is outside [0, 1]. Pass a value from 0 to 1."
-        )
+    check_range("with_alpha", "alpha", alpha, low=0, high=1)
     r, g, b, _ = parse_color(color)
     return f"rgba({r:g},{g:g},{b:g},{alpha:g})"
 
@@ -133,8 +138,11 @@ def contrast_ratio(foreground: str, background: str) -> float:
     bg = parse_color(background)
     if bg.a < 1:
         raise ValueError(
-            f"contrast_ratio: background={background!r} is translucent. "
-            "Pass an opaque surface colour."
+            message(
+                "contrast_ratio",
+                f"background={background!r} is translucent",
+                "Pass an opaque surface colour",
+            )
         )
     fg = parse_color(foreground)
     blended = RGBA(

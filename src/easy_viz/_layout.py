@@ -5,6 +5,7 @@ from typing import NamedTuple
 
 import plotly.graph_objects as go
 
+from easy_viz._validate import check_positive_int
 from easy_viz.config import get_config
 from easy_viz.theme.theme import Theme, build_template
 
@@ -100,11 +101,12 @@ def grid_geometry(
         ``(n_rows, n_cols, h_spacing, v_spacing, height)``: the spacings go to
         ``make_subplots``, ``height`` to the figure.
     """
-    if n_plots < 1 or n_cols < 1:
-        raise ValueError(
-            f"grid_geometry: n_plots={n_plots} and n_cols={n_cols} must both be "
-            "at least 1. Pass at least one plot and one column."
-        )
+    # Sizes are divided by below: reject 0 and negatives with a clear message.
+    for param, value in {"n_plots": n_plots, "n_cols": n_cols, "width": width}.items():
+        if param != "width" or value is not None:
+            check_positive_int("grid_geometry", param, value)
+    if height is not None:
+        check_positive_int("grid_geometry", "height", height)
     n_cols = min(n_cols, n_plots)
     n_rows = math.ceil(n_plots / n_cols)
     final_height = (

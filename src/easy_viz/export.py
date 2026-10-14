@@ -9,7 +9,12 @@ from typing import Literal, get_args
 import plotly.graph_objects as go
 import plotly.io as pio
 
-from easy_viz._validate import check_positive_int, check_range, message
+from easy_viz._validate import (
+    check_choice,
+    check_positive_int,
+    check_range,
+    message,
+)
 from easy_viz.config import get_config
 
 ImageFormat = Literal["png", "jpg", "jpeg", "webp", "svg", "pdf"]
@@ -147,15 +152,16 @@ def save_many(
     >>> ev.save_many(figs, "report", format="svg")  # doctest: +SKIP
     [PosixPath('/home/me/report/revenue.svg'), PosixPath('/home/me/report/cost.svg')]
     """
-    if format not in _FORMATS:
-        raise ValueError(
-            f"save_many: format={format!r} is not supported. "
-            f"Use one of: {_FORMAT_LIST}."
-        )
+    # Case-insensitive, like the extension save() reads: "PNG" works in both.
+    image_format = format.lower() if isinstance(format, str) else format
+    check_choice("save_many", "format", image_format, ImageFormat)
     if not figs:
         raise ValueError(
-            "save_many: figs is empty, so there is nothing to write. "
-            "Pass a mapping such as {'revenue': fig}."
+            message(
+                "save_many",
+                "figs is empty, so there is nothing to write",
+                "Pass a mapping such as {'revenue': fig}",
+            )
         )
     _check_names(figs)
     resolved_scale = _resolve_scale("save_many", scale)
@@ -163,7 +169,7 @@ def save_many(
 
     folder = Path(directory).expanduser().resolve()
     folder.mkdir(parents=True, exist_ok=True)
-    targets = [folder / f"{name}.{format}" for name in figs]
+    targets = [folder / f"{name}.{image_format}" for name in figs]
     figures = list(figs.values())
     # write_images ignores each figure's own layout size (it falls back to
     # Plotly's 700x500 default), unlike write_image. Pass the sizes explicitly so
@@ -171,7 +177,7 @@ def save_many(
     pio.write_images(
         figures,
         targets,
-        format=format,
+        format=image_format,
         scale=resolved_scale,
         width=[_layout_size(fig, "width") for fig in figures],
         height=[_layout_size(fig, "height") for fig in figures],
@@ -186,9 +192,12 @@ def _format_of(target: Path) -> str:
         return extension
     shown = f"{target.suffix!r}" if target.suffix else "no extension"
     raise ValueError(
-        f"save: path={str(target)!r} has {shown}, which is not a supported image "
-        f"format. End the path with one of: {_FORMAT_LIST} (for example "
-        "'report/revenue.png')."
+        message(
+            "save",
+            f"path={str(target)!r} has {shown}, which is not a supported image format",
+            f"End the path with one of: {_FORMAT_LIST} (for example "
+            "'report/revenue.png')",
+        )
     )
 
 
@@ -217,8 +226,12 @@ def _check_names(figs: Mapping[str, go.Figure]) -> None:
         # Case-insensitive file systems (Windows, macOS) treat these as one file.
         if (other := seen.setdefault(name.lower(), name)) != name:
             raise ValueError(
-                f"save_many: figs has the names {other!r} and {name!r}, which "
-                "are the same file on case-insensitive file systems. Rename one."
+                message(
+                    "save_many",
+                    f"figs has the names {other!r} and {name!r}, which are the "
+                    "same file on case-insensitive file systems",
+                    "Rename one",
+                )
             )
 
 
@@ -250,7 +263,10 @@ def _require_kaleido(function: str) -> None:
     # find_spec checks without importing: kaleido is optional and slow to import.
     if importlib.util.find_spec("kaleido") is None:
         raise ImportError(
-            f"{function}: static image export needs kaleido, which is not installed. "
-            'Run pip install "easy-viz[export]", then plotly_get_chrome if you '
-            "have no Chrome."
+            message(
+                function,
+                "static image export needs kaleido, which is not installed",
+                'Run pip install "easy-viz[export]", then plotly_get_chrome if you '
+                "have no Chrome",
+            )
         )

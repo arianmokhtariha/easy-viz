@@ -11,6 +11,8 @@ from collections.abc import Sized
 from numbers import Integral, Real
 from typing import get_args
 
+import numpy as np
+
 from easy_viz._warnings import warn
 
 
@@ -47,7 +49,8 @@ def is_set(value: object) -> bool:
     ``0`` counts as set: it is a value the user chose (range checks reject it
     where it isn't allowed).
     """
-    if value is None or value is False:
+    # numpy's False (e.g. read from a table cell) is not the False singleton.
+    if value is None or value is False or (isinstance(value, np.bool_) and not value):
         return False
     return not (isinstance(value, Sized) and len(value) == 0)
 
@@ -72,7 +75,9 @@ def check_choice(func: str, param: str, value: object, choices: object) -> None:
     """
     allowed = get_args(choices)
     if not allowed:
-        raise TypeError(f"check_choice: {choices!r} is not a Literal alias.")
+        raise TypeError(
+            message("check_choice", f"{choices!r} is not a Literal alias", "Pass one")
+        )
     if value not in allowed:
         options = ", ".join(repr(choice) for choice in allowed)
         raise ValueError(

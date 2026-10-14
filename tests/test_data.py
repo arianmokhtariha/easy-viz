@@ -96,6 +96,13 @@ def test_malformed_slots() -> None:
         load(native, "bar_plot", {"y": []})
 
 
+def test_duplicate_column_names_raise_the_standard_message() -> None:
+    # SELECT * over a join returns two "id" columns; narwhals refuses the table.
+    native = pd.DataFrame([[1, 2, "a", 3.0]], columns=["id", "id", "k", "v"])
+    with pytest.raises(ValueError, match=r"^bar_plot: df has duplicate column names"):
+        load(native, "bar_plot", {"x": "k", "y": "v"})
+
+
 def test_load_rejects_an_empty_table(make_frame: MakeFrame) -> None:
     with pytest.raises(ValueError, match=r"^bar_plot: df has no rows"):
         load(make_frame({"a": []}), "bar_plot", {"x": "a"})

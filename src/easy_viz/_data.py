@@ -24,6 +24,7 @@ from typing import Any, Literal
 import narwhals as nw
 import numpy as np
 import numpy.typing as npt
+from narwhals.exceptions import DuplicateError
 
 from easy_viz._typing import Agg, FrameLike
 from easy_viz._validate import check_choice, message, setting
@@ -156,6 +157,17 @@ def load(df: FrameLike, func: str, slots: Mapping[str, Columns]) -> Frame:
     """
     try:
         native = nw.from_native(df)
+    except DuplicateError:
+        # narwhals refuses the whole table, even if the repeated name is unused:
+        # typical of SELECT * over a join.
+        raise ValueError(
+            message(
+                func,
+                "df has duplicate column names",
+                "Give every column a unique name in the query, e.g. "
+                "SELECT a.id AS a_id",
+            )
+        ) from None
     except TypeError:
         raise TypeError(
             message(
@@ -409,7 +421,9 @@ def aggregate(
     """
     key_columns = list(dict.fromkeys(c for c in keys.values() if c is not None))
     if not key_columns:
-        raise ValueError(f"{func}: aggregate needs at least one key column.")
+        raise ValueError(
+            message(func, "aggregate needs at least one key column", "Pass x")
+        )
     if agg is not None:
         check_choice(func, "agg", agg, Agg)
     values = list(dict.fromkeys(values))

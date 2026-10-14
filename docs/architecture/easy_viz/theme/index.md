@@ -1,6 +1,6 @@
 # Theme package
 
-Covers: src/easy_viz/theme/__init__.py, src/easy_viz/theme/_color.py
+Covers: src/easy_viz/theme/__init__.py
 
 ## Responsibilities
 - Be the only place in the package where colour, font and size values live. A plot
@@ -18,7 +18,7 @@ Covers: src/easy_viz/theme/__init__.py, src/easy_viz/theme/_color.py
 |---|---|---|
 | `theme.py` | [theme.md](theme.md) | the `Theme` dataclass, its validation, and `build_template()` |
 | `registry.py` | [registry.md](registry.md) | `DARK`, `LIGHT`, the active theme, `get_theme` / `set_theme` / `resolve_theme`, Plotly template registration |
-| `_color.py` | this page | colour parsing and contrast maths |
+| `_color.py` | [_color.md](_color.md) | colour parsing and WCAG contrast maths |
 | `__init__.py` | this page | re-exports `Theme`, `get_theme`, `set_theme` |
 
 How a figure gets its theme:
@@ -29,19 +29,9 @@ How a figure gets its theme:
    `build_template(theme)`, plus the title block and size (see
    [_layout.md](../_layout.md)).
 
-Dependencies point one way: `theme/` imports only the standard library, `plotly` and
-`easy_viz.theme` itself. It never imports `plots/`, so any module may import it.
-
-**`_color.py`** (internal):
-- `parse_color(text) -> RGBA` reads the three accepted forms: hex (`#1a2b3c`, `#abc`),
-  `rgb(r, g, b)` and `rgba(r, g, b, a)`. Anything else raises `ValueError`.
-  `is_color(text)` is the boolean form used by validation.
-- `contrast_ratio(foreground, background)` is the WCAG 2.x ratio (1 to 21) from
-  relative luminance. A translucent foreground is first blended onto the background,
-  because the blend is what the reader sees; a translucent background raises, because
-  the result would depend on what lies behind it.
-- `with_alpha(color, alpha)` returns the colour as `rgba(...)` with a new opacity,
-  for translucent fills (confidence bands, radar areas) derived from a series colour.
+Dependencies point one way: `theme/` imports the standard library, `plotly`,
+`easy_viz.theme` itself and `easy_viz._validate` (for its number checks and message
+format). It never imports `plots/`, so any module may import it.
 
 ## Invariants
 Tested on every built-in theme (`tests/theme/test_theme.py`):
@@ -71,5 +61,3 @@ Tested on every built-in theme (`tests/theme/test_theme.py`):
   light (dark text on them), its marker scale has a grey midpoint (RdBu's near-white
   middle vanishes on white), and its colorway is darkened hue by hue so series *n*
   has the same hue family in both themes.
-- **`_color.py` is close to the size limit for an index-covered module** (150 lines).
-  If it grows past it, it moves to its own `_color.md`.

@@ -5,6 +5,7 @@ from typing import Literal, get_args
 import plotly.graph_objects as go
 import plotly.io as pio
 
+from easy_viz._validate import message, setting
 from easy_viz.theme.theme import Theme, build_template
 
 ThemeName = Literal["dark", "light"]
@@ -183,14 +184,20 @@ BUILTIN_THEMES: dict[str, Theme] = {"dark": DARK, "light": LIGHT}
 _active: Theme = DARK
 
 
-def _builtin(name: object, caller: str) -> Theme:
-    """Return the built-in theme called ``name``, or raise naming ``caller``."""
+def _builtin(name: object, caller: str, param: str = "theme") -> Theme:
+    """Return the built-in theme called ``name``, or raise naming ``caller``.
+
+    ``param`` is the caller's parameter that received ``name``, for the message.
+    """
     if isinstance(name, str) and name in BUILTIN_THEMES:
         return BUILTIN_THEMES[name]
     names = " or ".join(repr(n) for n in get_args(ThemeName))
     raise ValueError(
-        f"{caller}: theme={name!r} is not a built-in theme. "
-        f"Use {names}, or pass an ev.Theme."
+        message(
+            caller,
+            f"{setting(param, name)} is not a built-in theme",
+            f"Use {names}, or pass an ev.Theme",
+        )
     )
 
 
@@ -217,7 +224,7 @@ def get_theme(name: ThemeName | None = None) -> Theme:
     True
     >>> quiet = dataclasses.replace(ev.get_theme("light"), grid="#f0f0f0")
     """
-    return _active if name is None else _builtin(name, "get_theme")
+    return _active if name is None else _builtin(name, "get_theme", "name")
 
 
 def set_theme(theme: ThemeName | Theme) -> None:

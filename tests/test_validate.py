@@ -53,7 +53,8 @@ def test_check_conflict_message_matches_conventions() -> None:
     )
 
 
-@pytest.mark.parametrize("unset", [None, False, "", [], ()])
+# np.False_ arrives when an option value is read from a table cell.
+@pytest.mark.parametrize("unset", [None, False, np.False_, "", [], ()])
 def test_check_conflict_ignores_unset_options(unset: object) -> None:
     check_conflict("bar_plot", color_by_value=unset, color="region")
 

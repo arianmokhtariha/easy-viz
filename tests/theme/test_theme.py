@@ -1,4 +1,5 @@
 import dataclasses
+import re
 from collections.abc import Callable, Iterator
 from typing import get_args
 
@@ -144,6 +145,9 @@ def test_lists_are_stored_as_tuples_so_a_theme_stays_hashable() -> None:
     ("change", "message"),
     [
         ({"text": "white"}, "Theme: text='white' is not a colour"),
+        # float() reads these, Plotly's colour validator doesn't.
+        ({"grid": "rgb(1e2,0,0)"}, "Theme: grid='rgb(1e2,0,0)' is not a colour"),
+        ({"grid": "rgb(-0,0,0)"}, "Theme: grid='rgb(-0,0,0)' is not a colour"),
         ({"colorway": ()}, "Theme: colorway is empty"),
         ({"colorway": ("#fff", "blue")}, "Theme: colorway='blue' is not a colour"),
         (
@@ -176,7 +180,7 @@ def test_lists_are_stored_as_tuples_so_a_theme_stays_hashable() -> None:
 def test_invalid_values_raise_naming_the_field(
     change: dict[str, object], message: str
 ) -> None:
-    with pytest.raises(ValueError, match=message.replace("(", r"\(")):
+    with pytest.raises(ValueError, match=re.escape(message)):
         dataclasses.replace(DARK, **change)  # type: ignore[arg-type]
 
 
@@ -204,18 +208,19 @@ def test_set_theme_leaves_plotlys_default_template_alone() -> None:
 
 
 @pytest.mark.parametrize(
-    ("call", "caller"),
+    ("call", "named"),
     [
-        (lambda: resolve_theme("blue", caller="bar_plot"), "bar_plot"),  # type: ignore[arg-type]
-        (lambda: set_theme("blue"), "set_theme"),  # type: ignore[arg-type]
-        (lambda: get_theme("blue"), "get_theme"),  # type: ignore[arg-type]
-        (lambda: resolve_theme(3, caller="bar_plot"), "bar_plot"),  # type: ignore[arg-type]
+        (lambda: resolve_theme("blue", caller="bar_plot"), "bar_plot: theme='blue'"),  # type: ignore[arg-type]
+        (lambda: set_theme("blue"), "set_theme: theme='blue'"),  # type: ignore[arg-type]
+        # get_theme's parameter is `name`: the message names the one the user typed.
+        (lambda: get_theme("blue"), "get_theme: name='blue'"),  # type: ignore[arg-type]
+        (lambda: resolve_theme(3, caller="bar_plot"), "bar_plot: theme=3"),  # type: ignore[arg-type]
     ],
 )
-def test_unknown_theme_names_the_caller_and_the_value(
-    call: Callable[[], object], caller: str
+def test_unknown_theme_names_the_caller_parameter_and_value(
+    call: Callable[[], object], named: str
 ) -> None:
-    with pytest.raises(ValueError, match=rf"^{caller}: theme=.* is not a built-in"):
+    with pytest.raises(ValueError, match=rf"^{re.escape(named)} is not a built-in"):
         call()
 
 
