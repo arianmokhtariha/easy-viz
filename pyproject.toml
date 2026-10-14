@@ -47,7 +47,7 @@ requires = ["uv_build>=0.13,<0.14"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-# Agent guides are gitignored but still on disk; keep them out of local builds.
+# Agent guides and agent definitions are tracked but are not part of the library.
 source-exclude = ["**/CLAUDE.md", "**/CLAUDE.local.md", ".claude/**"]
 
 [tool.ruff]

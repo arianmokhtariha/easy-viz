@@ -1,6 +1,6 @@
 # Tests
 
-Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py
+Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py, tests/test_packaging.py
 
 ## Responsibilities
 Prove that the library is correct and that the repository stays consistent with
@@ -9,8 +9,8 @@ itself. There are two kinds of test:
   `theme/test_registry.py`, ...) mirror the module they test, one file per module.
 - **Repository-wide checks** sit at the top level and test rules that no single module
   owns: the public-function contract, the layering between sub-packages, the absence of
-  styling literals in the plot functions, and the agreement between documentation and
-  code.
+  styling literals in the plot functions, the agreement between documentation and
+  code, and the contents of the built package.
 
 `conftest.py` holds the shared `make_frame` fixture. It builds the same small table as
 pandas, polars and pyarrow, and runs each test that uses it once per backend, which is
@@ -82,9 +82,18 @@ Turns the placement rules for the documentation into checks. On the real reposit
 - every architecture doc is linked from the `index.md` of its directory, hence
   reachable from the overview;
 - every plan has a valid `Status`;
-- no tracked file links to or names the path of an agent guide;
-- only when the root guide exists (never in CI): the guides on disk and the table in
-  the root guide agree, and the links and imports inside the guides resolve.
+- the agent guides on disk and the table in the root guide agree, and the links and
+  imports inside the guides resolve.
+
+### `test_packaging.py`
+Builds the source distribution and the wheel with `uv build` into a temporary
+directory and lists their contents. Both must hold the package and no agent file
+(`CLAUDE.md`, `CLAUDE.local.md`, anything under `.claude/`). The guides are tracked
+and some sit inside `src/easy_viz/`, so only the build backend's `source-exclude`
+keeps them out of the library
+([decision 0008](../../decisions/0008-tracked-agent-guides.md)). A separate test
+asserts that guides exist in the source tree, so the build checks cannot pass for
+want of anything to exclude. Skips when `uv` is not on `PATH`.
 
 ## Invariants
 - A check that depends on a directory that does not exist yet passes vacuously and
@@ -104,13 +113,6 @@ Turns the placement rules for the documentation into checks. On the real reposit
   the Linux CI runner does not; a link that opens locally can still fail in CI.
 - **Coverage of code files excludes `tests/`.** Its doc needs valid `Covers:` paths but
   is not required to list every test file. When a test file is added, add it here too.
-- **The guide-reference check is stricter in prose than in configuration.** Excluding
-  guides is legitimate in configuration (a `**/` glob in the build settings, a bare
-  name in the ignore file), so only paths with a directory part and links fail there;
-  in Markdown, any mention fails. The check never inspects its own test file.
-- **Local-only checks skip in CI.** The guides are gitignored, so a failure in them
-  appears only on a machine that has them; run the whole file before opening a pull
-  request.
 - **Public names are found through `obj.__module__`.** A function whose `__module__`
   was rewritten (to hide where it is defined) is not recognised as living in its
   file, and escapes the own-doc rule.

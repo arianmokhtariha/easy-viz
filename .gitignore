@@ -1,7 +1,6 @@
-# AI agent guides and settings (kept local, never committed)
-CLAUDE.md
+# Personal AI agent overrides (the shared guides and agents are tracked)
 CLAUDE.local.md
-.claude/
+.claude/settings.local.json
 
 # Legacy reference code being ported into easy-viz (local only, deleted when done)
 legacy/
