@@ -25,8 +25,9 @@ What they add:
   mapping (not empty, every name usable as a file name) and the scale, then makes
   **one** `pio.write_images` call for all figures. Paths come back in the order of the
   mapping.
-- **Scale:** `scale=None` reads `get_config().export_scale` at call time, so a later
-  `set_config()` applies.
+- **Scale:** `scale=None` means 1 for `svg` and `pdf`, and otherwise reads
+  `get_config().export_scale` at call time, so a later `set_config()` applies. An
+  explicit `scale` applies to every format.
 - **Optional dependency:** kaleido ships in the `export` extra. `_require_kaleido()`
   tests for it with `importlib.util.find_spec` and never imports it; plotly itself
   imports kaleido only when export is first used. A missing kaleido raises
@@ -57,10 +58,10 @@ What they add:
 - **Plotly treats a falsy `scale`, `width` or `height` as "not given".** `scale=0`
   would silently export at Plotly's default scale, so easy-viz rejects values that
   are not positive.
-- **`scale` also applies to `svg` and `pdf`**: kaleido multiplies their page size
-  (a 400×300 figure at `scale=3` becomes a 1200×900 SVG). With the default
-  `export_scale` of 2, vector files come out at twice the figure's nominal size;
-  `scale=1` gives true-size vector files. Quality is unaffected either way.
+- **kaleido applies `scale` to `svg` and `pdf` too**, by multiplying their page size
+  (a 400×300 figure at `scale=3` becomes a 1200×900 SVG); quality is unaffected.
+  That is why `export_scale` is not used for them: with its default of 2, every
+  vector file would come out at twice the figure's size.
 - **File names are checked for portability, not only validity, before any export
   starts.** `save_many` rejects names Windows refuses (`< > : " / \ | ? *`, control
   characters, a trailing dot or space, device names such as `CON` or `NUL.txt`),

@@ -20,6 +20,9 @@ from easy_viz.config import get_config
 ImageFormat = Literal["png", "jpg", "jpeg", "webp", "svg", "pdf"]
 _FORMATS: tuple[str, ...] = get_args(ImageFormat)
 _FORMAT_LIST = ", ".join(_FORMATS)
+# Vector formats have no resolution: a scale only enlarges their page size, so by
+# default they are written at the figure's true size (scale 1).
+_VECTOR_FORMATS = frozenset({"svg", "pdf"})
 
 # Characters that would move a file out of the target directory, or that Windows
 # refuses in a file name: checked up front so a batch never fails half-written.
@@ -55,9 +58,10 @@ def save(
         directories are created.
     scale : float or None, default None
         Resolution multiplier: 2 writes a 1400 px wide figure as a 2800 px wide
-        image. ``None`` uses ``export_scale`` from :func:`set_config`. It also
-        scales the page size of ``svg`` and ``pdf`` (2 writes a 1400 px figure
-        as a 2800 px wide SVG), so pass ``scale=1`` for true-size vector files.
+        image. ``None`` uses ``export_scale`` from :func:`set_config` for
+        ``png``, ``jpg``, ``jpeg`` and ``webp``, and 1 for ``svg`` and ``pdf``,
+        which stay sharp at any size. A scale given here applies to every
+        format; for ``svg`` and ``pdf`` it multiplies the page size.
     width, height : int or None, default None
         Size in px, overriding the figure's own. ``None`` keeps the figure's size.
 
@@ -84,7 +88,7 @@ def save(
     """
     image_format = _format_of(path)
     target = Path(path).expanduser().resolve()
-    resolved_scale = _resolve_scale("save", scale)
+    resolved_scale = _resolve_scale("save", scale, image_format)
     _check_pixels("save", "width", width)
     _check_pixels("save", "height", height)
     _require_kaleido("save")
@@ -127,7 +131,7 @@ def save_many(
         Image format of every file.
     scale : float or None, default None
         Resolution multiplier, as in :func:`save`. ``None`` uses ``export_scale``
-        from :func:`set_config`.
+        from :func:`set_config` for raster formats and 1 for ``svg`` and ``pdf``.
 
     Returns
     -------
@@ -167,7 +171,7 @@ def save_many(
             )
         )
     _check_names(figs)
-    resolved_scale = _resolve_scale("save_many", scale)
+    resolved_scale = _resolve_scale("save_many", scale, image_format)
     _require_kaleido("save_many")
 
     folder = Path(directory).expanduser().resolve()
@@ -240,10 +244,13 @@ def _check_names(figs: Mapping[str, go.Figure]) -> None:
             )
 
 
-def _resolve_scale(function: str, scale: float | None) -> float:
-    """Return ``scale``, or the configured export scale when it is ``None``."""
+def _resolve_scale(function: str, scale: float | None, image_format: str) -> float:
+    """Return ``scale``, or the default for ``image_format`` when it is ``None``.
+
+    The default is 1 for vector formats and the configured export scale otherwise.
+    """
     if scale is None:
-        return get_config().export_scale
+        return 1.0 if image_format in _VECTOR_FORMATS else get_config().export_scale
     # Plotly treats a falsy scale as "use the default", which would hide a 0.
     check_range(function, "scale", scale, low=0, include_low=False)
     return scale

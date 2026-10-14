@@ -13,7 +13,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 - Global output defaults: `get_config()` and `set_config()` for the default figure
   width (1400 px) and export resolution (2x).
 - Static export: `save()` for one figure and `save_many()` for a batch in a single
-  Chrome session. Needs `pip install "easy-viz[export]"` and Chrome.
+  Chrome session. PNG, JPEG and WebP use the configured resolution; SVG and PDF are
+  written at the figure's true size. Needs `pip install "easy-viz[export]"` and
+  Chrome.
 - `EasyVizWarning`: every easy-viz warning uses it, and it points at the line of your
   own call, so `warnings.filterwarnings("ignore", category=ev.EasyVizWarning)`
   silences easy-viz without silencing other libraries.

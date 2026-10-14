@@ -14,8 +14,10 @@ class Config:
     width : int, default 1400
         Figure width in px for plots called with ``width=None``.
     export_scale : float, default 2.0
-        Resolution multiplier for static export (``save``, ``save_many``):
-        2.0 writes a 1400 px wide figure as a 2800 px wide image.
+        Resolution multiplier for static export (``save``, ``save_many``) to
+        raster formats (png, jpg, jpeg, webp): 2.0 writes a 1400 px wide figure
+        as a 2800 px wide image. Vector formats (svg, pdf) are written at scale 1
+        unless a call passes ``scale``.
     """
 
     width: int = 1400
@@ -53,8 +55,8 @@ def set_config(
     width : int or None, default None
         New default figure width in px. ``None`` keeps the current value.
     export_scale : float or None, default None
-        New default export resolution multiplier. ``None`` keeps the current
-        value.
+        New default export resolution multiplier for raster formats. ``None``
+        keeps the current value.
 
     Returns
     -------
