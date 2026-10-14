@@ -24,10 +24,11 @@ effect in the current mode, and, once plots exist, categories folded into "Other
 
 ## Pitfalls
 - **The prefix is compared as plain text** with each frame's file name, so it is the
-  raw text of `__file__`'s directory (`os.path.dirname`). `pathlib` would normalise
-  `..` and separators, and resolving would follow symlinks; either breaks the match
-  when a notebook imports easy-viz through `sys.path.insert(0, "../src")` or a
-  mapped drive, and warnings would then point inside easy-viz (tested). It ends in a
+  raw text of `__file__`'s directory (`os.path.dirname`). `pathlib` would collapse
+  `.` segments and normalise separators (`/` to `\` on Windows), and resolving would
+  follow symlinks; any of these breaks the match when a notebook imports easy-viz
+  through a path such as `"./src"` or `"D:/proj/src"` (on Windows) or a mapped drive,
+  and warnings would then point inside easy-viz (tested). It ends in a
   path separator, so a sibling file such as `easy_viz_extra.py` isn't skipped.
 - **`stacklevel` is the wrong tool here.** It counts frames, so it breaks as soon as
   the warning is raised one helper deeper. `skip_file_prefixes` doesn't depend on

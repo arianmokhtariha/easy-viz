@@ -27,9 +27,9 @@ def test_users_can_silence_easy_viz_warnings_only() -> None:
 
 
 def test_warning_points_at_the_caller_when_the_import_path_is_not_normalised() -> None:
-    # A notebook doing sys.path.insert(0, "../src") imports easy-viz through a
-    # path with "." or ".." in it; the skip prefix must match that raw text.
-    # pathlib drops "/./" on every OS, so this fails on Linux CI too. The warning
+    # A notebook doing sys.path.insert(0, "./src") imports easy-viz through a
+    # path that isn't normalised; the skip prefix must match that raw text.
+    # pathlib collapses "/./" on every OS, so this fails on Linux CI too. The warning
     # has to start inside another easy-viz module (here _data): warn()'s own
     # frame is skipped whatever the prefix.
     src = Path(easy_viz.__file__).parents[1]

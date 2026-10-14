@@ -105,6 +105,13 @@ def test_duplicate_column_names_raise_the_standard_message() -> None:
         load(native, "bar_plot", {"x": "k", "y": "v"})
 
 
+def test_duplicate_names_are_found_even_beside_a_column_called_column_names() -> None:
+    # On pandas, df.column_names is that column's data, not pyarrow's name list.
+    native = pd.DataFrame([[1, 2, 3]], columns=["column_names", "id", "id"])
+    with pytest.raises(ValueError, match=r"duplicate column names \('id'\)"):
+        load(native, "bar_plot", {"x": "column_names"})
+
+
 def test_load_rejects_an_empty_table(make_frame: MakeFrame) -> None:
     with pytest.raises(ValueError, match=r"^bar_plot: df has no rows"):
         load(make_frame({"a": []}), "bar_plot", {"x": "a"})

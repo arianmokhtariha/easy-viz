@@ -6,9 +6,9 @@ import warnings
 # Frames from files under the package directory are skipped when Python picks the
 # line a warning points at, so it always points at the user's own call. The prefix
 # is compared as plain text with each frame's file name, so it must be the raw text
-# of __file__: os.path, not pathlib, because Path normalises separators and "..",
-# and resolving would break symlinked or mapped installs. It ends in a separator so
-# a sibling like easy_viz_x.py isn't skipped.
+# of __file__: os.path, not pathlib, because Path collapses "." segments and
+# normalises separators, and resolving would break symlinked or mapped installs.
+# It ends in a separator so a sibling like easy_viz_x.py isn't skipped.
 _PACKAGE_DIR = os.path.dirname(__file__) + os.sep
 
 

@@ -115,8 +115,10 @@ def _native_column_names(df: object) -> list[str]:
 
     Reads pyarrow's ``column_names`` or pandas' ``columns``.
     """
+    # pyarrow's column_names is a list. On pandas, df.column_names would be a
+    # column of that name, so anything but a list falls through to .columns.
     names = getattr(df, "column_names", None)
-    if names is None:
+    if not isinstance(names, list):
         names = getattr(df, "columns", None)
     return [str(name) for name in names] if names is not None else []
 
