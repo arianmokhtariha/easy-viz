@@ -203,6 +203,9 @@ def test_save_many_rejects_empty_mapping_and_unknown_format(tmp_path: Path) -> N
         save_many({}, tmp_path)
     with pytest.raises(ValueError, match="format='eps'"):
         save_many({"a": make_fig()}, tmp_path, format="eps")  # type: ignore[arg-type]
+    # The message quotes the value as typed, not the lower-cased one.
+    with pytest.raises(ValueError, match="format='BMP' is not valid"):
+        save_many({"a": make_fig()}, tmp_path, format="BMP")  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize(

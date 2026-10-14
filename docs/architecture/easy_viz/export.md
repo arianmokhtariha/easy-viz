@@ -20,7 +20,8 @@ What they add:
   3. creates the parent directory
   4. calls `pio.write_image`
   5. returns `Path(path).expanduser().resolve()`
-- **`save_many(figs, directory, *, format, scale)`:** validates the format, the
+- **`save_many(figs, directory, *, format, scale)`:** validates the format
+  (case-insensitive like `save`'s extension; an error quotes it as typed), the
   mapping (not empty, every name usable as a file name) and the scale, then makes
   **one** `pio.write_images` call for all figures. Paths come back in the order of the
   mapping.

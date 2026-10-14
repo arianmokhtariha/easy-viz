@@ -154,7 +154,9 @@ def save_many(
     """
     # Case-insensitive, like the extension save() reads: "PNG" works in both.
     image_format = format.lower() if isinstance(format, str) else format
-    check_choice("save_many", "format", image_format, ImageFormat)
+    if image_format not in _FORMATS:
+        # The message shows the value as the user passed it.
+        check_choice("save_many", "format", format, ImageFormat)
     if not figs:
         raise ValueError(
             message(

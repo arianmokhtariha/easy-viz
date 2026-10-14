@@ -96,7 +96,8 @@ with missing values as NaN: the point where narwhals stops and `stats/` starts.
 - Only used columns are ever checked for nulls or converted: an unrelated broken
   column in a wide query result never affects a chart. The one exception is
   duplicate column names anywhere in the table: narwhals refuses such a table as a
-  whole, so `load` raises a `ValueError` asking for unique names in the query.
+  whole, so `load` raises a `ValueError` that names the repeated columns and asks
+  for unique names in the query.
 - Every message goes through `_validate.message` and names the parameter and value.
 
 ## Pitfalls

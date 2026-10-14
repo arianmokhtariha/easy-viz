@@ -296,7 +296,9 @@ def _add_polar(fig: go.Figure, theme: Theme) -> None:
 
 def build_sheet(name: str, theme: Theme) -> go.Figure:
     """Return the sample sheet figure for one theme."""
-    geometry = grid_geometry(len(PANELS), N_COLS, width=None, height=None, theme=theme)
+    geometry = grid_geometry(
+        len(PANELS), N_COLS, width=None, height=None, theme=theme, caller="samples"
+    )
     specs = [[{"type": "xy"}] * geometry.n_cols for _ in range(geometry.n_rows)]
     specs[2][2] = {"type": "polar"}
     fig = make_subplots(

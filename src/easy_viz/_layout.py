@@ -56,6 +56,7 @@ def grid_geometry(
     width: int | None,
     height: int | None,
     theme: Theme,
+    caller: str,
 ) -> GridGeometry:
     """Compute subplot-grid geometry shared by the grid-based plots.
 
@@ -94,6 +95,8 @@ def grid_geometry(
     theme : Theme
         Source of the pixel budgets (``row_gap_px``, ``col_gap_px``,
         ``row_plot_px``).
+    caller : str
+        The public function the user called, named in error messages.
 
     Returns
     -------
@@ -104,9 +107,9 @@ def grid_geometry(
     # Sizes are divided by below: reject 0 and negatives with a clear message.
     for param, value in {"n_plots": n_plots, "n_cols": n_cols, "width": width}.items():
         if param != "width" or value is not None:
-            check_positive_int("grid_geometry", param, value)
+            check_positive_int(caller, param, value)
     if height is not None:
-        check_positive_int("grid_geometry", "height", height)
+        check_positive_int(caller, "height", height)
     n_cols = min(n_cols, n_plots)
     n_rows = math.ceil(n_plots / n_cols)
     final_height = (

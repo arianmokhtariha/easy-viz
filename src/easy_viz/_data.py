@@ -16,6 +16,7 @@ Everything runs on the user's own backend through narwhals (decision 0004);
 import datetime as dt
 import difflib
 import re
+from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from decimal import Decimal
 from numbers import Real
@@ -109,6 +110,17 @@ def _missing_column(
     return message(func, f"{_label(param, value, column)} is not a column of df", fix)
 
 
+def _native_column_names(df: object) -> list[str]:
+    """Column names of a table narwhals refused; empty if it exposes none.
+
+    Reads pyarrow's ``column_names`` or pandas' ``columns``.
+    """
+    names = getattr(df, "column_names", None)
+    if names is None:
+        names = getattr(df, "columns", None)
+    return [str(name) for name in names] if names is not None else []
+
+
 def load(df: FrameLike, func: str, slots: Mapping[str, Columns]) -> Frame:
     """Turn the user's table into a normalised narwhals frame of the used columns.
 
@@ -160,10 +172,12 @@ def load(df: FrameLike, func: str, slots: Mapping[str, Columns]) -> Frame:
     except DuplicateError:
         # narwhals refuses the whole table, even if the repeated name is unused:
         # typical of SELECT * over a join.
+        names = Counter(_native_column_names(df))
+        repeated = ", ".join(repr(name) for name, n in names.items() if n > 1)
         raise ValueError(
             message(
                 func,
-                "df has duplicate column names",
+                f"df has duplicate column names ({repeated or 'unknown'})",
                 "Give every column a unique name in the query, e.g. "
                 "SELECT a.id AS a_id",
             )

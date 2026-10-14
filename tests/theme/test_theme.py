@@ -148,6 +148,12 @@ def test_lists_are_stored_as_tuples_so_a_theme_stays_hashable() -> None:
         # float() reads these, Plotly's colour validator doesn't.
         ({"grid": "rgb(1e2,0,0)"}, "Theme: grid='rgb(1e2,0,0)' is not a colour"),
         ({"grid": "rgb(-0,0,0)"}, "Theme: grid='rgb(-0,0,0)' is not a colour"),
+        # One bad part rejects the whole colour, it is never skipped.
+        ({"grid": "rgb(1,2,3,abc)"}, "Theme: grid='rgb(1,2,3,abc)' is not a colour"),
+        ({"grid": "rgb(1,2,3,)"}, "Theme: grid='rgb(1,2,3,)' is not a colour"),
+        # Plotly allows spaces around numbers, not tabs.
+        # The message shows the value's repr, so the tab appears as "\t".
+        ({"grid": "rgb(1,\t2,3)"}, r"Theme: grid='rgb(1,\t2,3)' is not a colour"),
         ({"colorway": ()}, "Theme: colorway is empty"),
         ({"colorway": ("#fff", "blue")}, "Theme: colorway='blue' is not a colour"),
         (

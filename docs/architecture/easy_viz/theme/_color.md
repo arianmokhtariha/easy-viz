@@ -9,8 +9,9 @@ public.
 
 ## How it works
 - `parse_color(text) -> RGBA` reads the three accepted forms: hex (`#1a2b3c`, `#abc`),
-  `rgb(r, g, b)` and `rgba(r, g, b, a)`. Numbers are plain decimals (`26`, `0.6`,
-  `.6`). Anything else raises `ValueError`. `is_color(text)` is the boolean form used
+  `rgb(r, g, b)` and `rgba(r, g, b, a)`. Every part must be a plain decimal
+  (`26`, `0.6`, `.6`), with only spaces around it; one bad part rejects the whole
+  colour. Anything else raises `ValueError`. `is_color(text)` is the boolean form used
   by validation.
 - `contrast_ratio(foreground, background)` is the WCAG 2.x ratio (1 to 21) from
   relative luminance. A translucent foreground is first blended onto the background,

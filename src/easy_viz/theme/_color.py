@@ -53,10 +53,13 @@ def parse_color(color: str) -> RGBA:
         red, green, blue = (int(digits[i : i + 2], 16) for i in (0, 2, 4))
         return RGBA(red, green, blue, 1.0)
     if match := _FUNCTION.fullmatch(text):
-        parts = [p.strip() for p in match["args"].split(",")]
+        # Only spaces are allowed around numbers: Plotly rejects tabs and newlines.
+        parts = [p.strip(" ") for p in match["args"].split(",")]
         expected = 4 if match["name"] == "rgba" else 3
-        values = [float(p) for p in parts if _NUMBER.fullmatch(p)]
-        if len(values) == expected:
+        # Every part must be a number: one bad part rejects the whole colour.
+        valid = len(parts) == expected and all(_NUMBER.fullmatch(p) for p in parts)
+        values = [float(p) for p in parts] if valid else []
+        if values:
             r, g, b = values[:3]
             a = values[3] if expected == 4 else 1.0
             if all(0 <= c <= 255 for c in (r, g, b)) and 0 <= a <= 1:

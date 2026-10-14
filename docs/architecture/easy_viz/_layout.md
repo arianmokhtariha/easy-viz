@@ -13,9 +13,10 @@ The figure-level layout every plot shares, so no plot re-solves it:
   anywhere in a string switch Plotly into LaTeX mode ("Revenue from $1M to $3M"
   renders as garbled maths). The entity renders as a plain `$`. Other HTML is left
   alone, so users can pass `<b>` or `<br>` on purpose.
-- **`grid_geometry(n_plots, n_cols, *, width, height, theme) -> GridGeometry`**
+- **`grid_geometry(n_plots, n_cols, *, width, height, theme, caller) -> GridGeometry`**
   (`n_rows, n_cols, h_spacing, v_spacing, height`), ported from the original
-  `_grid_geometry`:
+  `_grid_geometry`. Counts and sizes below 1 raise in the `_validate` format, naming
+  `caller` (the public plot the user called), because the sizes are divided by:
   - `make_subplots` takes spacing as a fraction of the grid, so a fixed fraction
     starves large grids (at `0.12`, nine rows leave ~11 px per row). Gaps are
     instead pixel budgets from the theme (`row_gap_px`, `col_gap_px`), converted
