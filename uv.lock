@@ -542,9 +542,9 @@ docs = [
 requires-dist = [
     { name = "kaleido", marker = "extra == 'export'", specifier = ">=1.5" },
     { name = "narwhals", specifier = ">=2.0" },
-    { name = "numpy", specifier = ">=2.0" },
+    { name = "numpy", specifier = ">=2.1" },
     { name = "plotly", specifier = ">=7.1" },
-    { name = "scipy", specifier = ">=1.13" },
+    { name = "scipy", specifier = ">=1.14.1" },
 ]
 provides-extras = ["export"]
 

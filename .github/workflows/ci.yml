@@ -84,11 +84,13 @@ jobs:
       # Reads the runtime dependencies and extras from pyproject.toml and picks the
       # lowest version each lower bound allows. --upgrade makes uv re-resolve:
       # without it, the newer locked versions already satisfy the bounds and
-      # nothing changes.
+      # nothing changes. --only-binary matches what users get from pip: a bound
+      # with no ready-built package for this Python is skipped here and then
+      # fails the check below, instead of failing late in a source build.
       - name: Downgrade runtime dependencies to their lower bounds
         run: >-
           uv pip install -r pyproject.toml --all-extras --resolution lowest-direct
-          --upgrade
+          --upgrade --only-binary :all:
 
       # Fails if a dependency is not at its lower bound, so the job can never pass
       # while testing newer versions than it claims.
