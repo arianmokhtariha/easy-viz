@@ -69,8 +69,9 @@ Every public plotting function:
 4. Validates before computing anything:
    - missing columns and wrong dtypes raise `TypeError`/`ValueError`
    - every conflicting option pair raises `ValueError`
-5. Reports non-fatal issues with `warnings.warn(..., EasyVizWarning)`: nulls dropped,
-   categories folded into "Other", an option with no effect in this mode.
+5. Reports non-fatal issues as an `EasyVizWarning` through `_warnings.warn()` (never
+   `warnings.warn` directly, so the warning points at the user's call): nulls
+   dropped, categories folded into "Other", an option with no effect in this mode.
 6. Tags every trace with a role (see below).
 7. Gets its numbers from `stats/` functions.
 8. Has a numpy-style docstring with:

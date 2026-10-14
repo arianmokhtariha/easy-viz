@@ -71,7 +71,7 @@ def _add_bars(fig: go.Figure, theme: Theme) -> None:
         showarrow=False,
         font={"color": theme.reference, "size": theme.label_font_size},
         bgcolor=theme.overlay_background,
-        bordercolor=theme.reference,
+        bordercolor=theme.overlay_border,
         borderwidth=1,
         row=1,
         col=1,
