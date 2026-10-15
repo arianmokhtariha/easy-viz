@@ -41,8 +41,9 @@ Tested on every built-in theme (`tests/theme/test_registry.py`):
   4.5:1 inside an `overlay_background` box on the plot area.
 - Every stop of `diverging_scale` and `sequential_scale` reaches 4.5:1 under
   `cell_text`, and the heatmap template draws cell labels in `cell_text`.
-- Every `colorway` colour reaches 3:1 on `plot_background` (WCAG's level for
-  graphical objects).
+- Every `colorway` colour, and every stop of `marker_sequential_scale`, reaches 3:1
+  on `plot_background` (WCAG's level for graphical objects), so the smallest bar
+  coloured by value never disappears.
 - Parity: every field is set in both built-ins (the dataclass has no defaults, so a
   missing value fails at import), the colorways have the same length, and each scale
   has the same stop positions in both.

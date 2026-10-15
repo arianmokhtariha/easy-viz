@@ -558,9 +558,7 @@ def _group_medians(
     with ``approximate_median`` (a t-digest), which is wrong for small groups
     (the median of 1 and 3 comes out as 1). One code path for every backend.
     """
-    first_row = indexed.select(nw.col(order).min().over(*key_columns))[order]
-    # first_row sorts in first-appearance order, so group ids follow it too.
-    _, group = np.unique(first_row.to_numpy(), return_inverse=True)
+    _, group = _group_ids(indexed, key_columns, order)
     sizes = np.bincount(group)
     starts = np.concatenate(([0], np.cumsum(sizes)[:-1]))
     low, high = starts + (sizes - 1) // 2, starts + sizes // 2
@@ -570,6 +568,43 @@ def _group_medians(
         ranked = numbers[np.lexsort((numbers, group))]
         medians[column] = (ranked[low] + ranked[high]) / 2
     return medians
+
+
+def _group_ids(
+    indexed: Frame, key_columns: Sequence[str], order: str
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.intp]]:
+    """Give each row its group's number, in the order groups first appear.
+
+    Returns the first row index of every group (ascending) and, per row, the
+    position of its group in that list. ``order`` is a row-index column.
+    """
+    first_row = indexed.select(nw.col(order).min().over(*key_columns))[order]
+    # first_row sorts in first-appearance order, so group ids follow it too.
+    firsts, group = np.unique(first_row.to_numpy(), return_inverse=True)
+    return firsts.astype(np.int64), group.astype(np.intp)
+
+
+def group_arrays(
+    frame: Frame, key_columns: Sequence[str], column: str
+) -> dict[tuple[object, ...], npt.NDArray[np.float64]]:
+    """Split a numeric column into one float array per key combination.
+
+    The raw values behind each bar, for statistics that need more than an
+    aggregate (confidence intervals). Keys are tuples of Python values in
+    ``key_columns`` order, as ``to_dict`` returns them; the dict keeps the
+    order in which groups first appear.
+    """
+    order = nw.generate_temporary_column_name(8, frame.columns)
+    firsts, group = _group_ids(frame.with_row_index(order), key_columns, order)
+    keys = frame.select(*key_columns).to_dict(as_series=False)
+    numbers = to_float_array(frame, column)
+    # One stable sort, then contiguous slices: every group's rows keep their order.
+    ranked = numbers[np.argsort(group, kind="stable")]
+    bounds = np.cumsum(np.bincount(group, minlength=len(firsts)))[:-1]
+    return {
+        tuple(keys[name][first] for name in key_columns): values
+        for first, values in zip(firsts, np.split(ranked, bounds), strict=True)
+    }
 
 
 def to_float_array(frame: Frame, column: str) -> npt.NDArray[np.float64]:

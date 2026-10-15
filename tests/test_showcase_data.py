@@ -170,6 +170,37 @@ def black_friday_ratio(t: Tables) -> float:
     return float(np.mean(ratios))
 
 
+def black_friday_weekend_by_category(t: Tables) -> pl.DataFrame:
+    """Orders and mean order revenue per category, Black Friday to Cyber Monday 2025.
+
+    Rows are ranked by mean revenue, highest first.
+    """
+    friday = black_friday(2025)
+    weekend = t["orders"].filter(
+        pl.col("order_date").is_between(friday, friday + dt.timedelta(days=3))
+    )
+    return (
+        weekend.join(t["products"], on="product_id")
+        .group_by("category")
+        .agg(pl.len().alias("orders"), pl.col("revenue").mean())
+        .sort("revenue", descending=True)
+    )
+
+
+def office_weekend_rank(t: Tables) -> float:
+    ranked = black_friday_weekend_by_category(t)["category"].to_list()
+    return float(ranked.index("Office") + 1)
+
+
+def office_weekend_orders(t: Tables) -> float:
+    weekend = black_friday_weekend_by_category(t)
+    return float(weekend.filter(pl.col("category") == "Office")["orders"].item())
+
+
+def weekend_categories_below_30(t: Tables) -> float:
+    return float((black_friday_weekend_by_category(t)["orders"] < 30).sum())
+
+
 def weekday_ratio(t: Tables) -> float:
     """Busiest weekday's mean daily orders over the quietest weekday's."""
     by_day = (
@@ -363,6 +394,9 @@ METRICS: dict[str, Metric] = {
     "checkout-max-lift": Metric(checkout_max_lift, TWO_DECIMALS),
     "checkout-anova-p": Metric(checkout_anova_p, TWO_DECIMALS),
     "checkout-cis-overlap": Metric(checkout_cis_overlap, 0),
+    "smallgroups-office-weekend-rank": Metric(office_weekend_rank, 0),
+    "smallgroups-office-weekend-orders": Metric(office_weekend_orders, 0),
+    "smallgroups-weekend-categories-below-30": Metric(weekend_categories_below_30, 0),
 }
 
 

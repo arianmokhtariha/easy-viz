@@ -81,6 +81,12 @@ function name used in messages):
      raises `ValueError`.
    - Returns the frame and the list of value column names to draw.
 
+`group_arrays(frame, key_columns, column)` splits a numeric column into one float
+array per key combination, groups in first-appearance order (keys are tuples of
+Python values): the raw values behind each bar, for statistics that need more than an
+aggregate, such as confidence intervals. It shares the group numbering with the
+median path (`_group_ids`).
+
 `to_float_array(frame, column)` returns a numeric column as a `float64` numpy array
 with missing values as NaN: the point where narwhals stops and `stats/` starts.
 
@@ -102,6 +108,10 @@ with missing values as NaN: the point where narwhals stops and `stats/` starts.
 - Every message goes through `_validate.message` and names the parameter and value.
 
 ## Pitfalls
+- **polars sums floats in parallel**, so a group's sum can differ in the last digit
+  between runs (1002273.7800000001 or ...0003). Charts and formatted labels are the
+  same, but the raw values stored in a figure are not byte-identical; the gallery
+  passes raw rows it aggregates as pandas or Arrow for that reason.
 - **Group order differs by backend.** polars' `group_by` returns groups in arbitrary
   order; pandas and pyarrow happen to keep appearance order. Never rely on the
   backend: keep the row-index sort.

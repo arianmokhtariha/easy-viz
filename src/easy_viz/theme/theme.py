@@ -85,6 +85,10 @@ class Theme:
     marker_diverging_scale : tuple of (float, str)
         Diverging scale for markers, which carry no text, so its midpoint may
         be as light or dark as the surface allows.
+    marker_sequential_scale : tuple of (float, str)
+        Low-to-high scale for marks coloured by their value (bars, markers).
+        Unlike ``sequential_scale``, its lowest colour stays visible on the plot
+        area, so the smallest bar never disappears.
     severity_scale : tuple of (float, str)
         Healthy-to-alarming ramp (e.g. share of missing values).
     font_family : str
@@ -132,6 +136,7 @@ class Theme:
     diverging_scale: ColorScale
     sequential_scale: ColorScale
     marker_diverging_scale: ColorScale
+    marker_sequential_scale: ColorScale
     severity_scale: ColorScale
     font_family: str
     font_size: Px

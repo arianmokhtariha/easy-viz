@@ -57,8 +57,14 @@ class ContractCase:
         return self.function.__name__
 
 
-# Public plot functions with a minimal valid call. Empty until the first plot lands.
-REGISTRY: tuple[ContractCase, ...] = ()
+# Public plot functions with a minimal valid call.
+REGISTRY: tuple[ContractCase, ...] = (
+    ContractCase(
+        easy_viz.bar_plot,
+        data={"region": ["North", "South", "East"], "revenue": [3.0, 1.0, 2.0]},
+        args=("region", "revenue"),
+    ),
+)
 
 
 @pytest.fixture(params=REGISTRY or [None], ids=lambda c: c.name if c else "empty")

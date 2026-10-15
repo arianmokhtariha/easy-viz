@@ -15,3 +15,16 @@ Orientation = Literal["vertical", "horizontal"]
 
 # How rows are combined per x / color / facet group. "count" needs no y column.
 Agg = Literal["sum", "mean", "median", "min", "max", "count"]
+
+# How categories are ordered: by bar value, or by the x value itself.
+SortBy = Literal["value", "x"]
+
+# Several series side by side, stacked, or stacked to 100 % per category.
+BarMode = Literal["group", "stack", "percent"]
+
+# Where value labels sit relative to their bar (Plotly's names).
+TextPosition = Literal["outside", "inside", "auto"]
+
+# How marks are coloured by their own value: a low-to-high scale, two directions
+# from a midpoint, or the theme's positive/negative colours.
+ValueColoring = Literal["sequential", "diverging", "sign"]

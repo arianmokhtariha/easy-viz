@@ -6,7 +6,7 @@ kitchenware, bedding, lighting and smaller decor. Customers can buy a paid membe
 years of the business, from 2024-01-01 to 2025-12-31, in seven tables that join on
 their keys and agree with each other.
 
-Ten patterns are hidden in the data on purpose. Each one is the kind of thing a
+Eleven patterns are hidden in the data on purpose. Each one is the kind of thing a
 default chart misses, and each one is revealed by a specific easy-viz chart and
 option. This page lists them all: where each pattern is, how it was made, how strong it
 is, and how to find it.
@@ -17,7 +17,8 @@ re-run `uv run python gallery/data/generate.py`. `tests/test_showcase_data.py` c
 every row of the summary below against the committed CSV files, and checks that the
 files are exactly what the generator produces.
 
-These ten patterns are the starting set, not the full list. The dataset grows one plot
+The first ten patterns were the starting set; the rest arrive with the plot
+functions whose options reveal them. The dataset grows one plot
 function at a time: each port adds the patterns its options and scenarios need, so
 every notebook has a real story to tell.
 
@@ -56,6 +57,9 @@ pattern defines its metrics precisely.
 | `checkout-max-lift` | 10. Differences that aren't real | checkout_test | Highest variant mean over lowest, minus 1 | 0.09 |
 | `checkout-anova-p` | 10. Differences that aren't real | checkout_test | One-way ANOVA p-value of order_value by variant | 0.62 |
 | `checkout-cis-overlap` | 10. Differences that aren't real | checkout_test | 1 if the 95 % bootstrap intervals of all variant means overlap | 1 |
+| `smallgroups-office-weekend-rank` | 11. Small groups at the top of a ranking | orders, products | Rank of Office by mean order revenue, Black Friday weekend 2025 | 2 |
+| `smallgroups-office-weekend-orders` | 11. Small groups at the top of a ranking | orders, products | Office orders, Black Friday weekend 2025 | 3 |
+| `smallgroups-weekend-categories-below-30` | 11. Small groups at the top of a ranking | orders, products | Categories with fewer than 30 orders, Black Friday weekend 2025 | 13 |
 
 ## The business and its tables
 
@@ -326,3 +330,22 @@ pair (A $71.6 to $89.7, B $76.7 to $100.0, C $73.9 to $94.4; 4,000 resamples, se
 **How to reveal it:** a bar chart of mean order value per variant crowns B.
 Bars by variant and device with bootstrap confidence intervals show
 error bars that overlap everywhere: there is no winner to ship.
+
+## 11. Small groups at the top of a ranking
+
+**Where:** `orders` joined to `products`, Black Friday to Cyber Monday 2025
+(2025-11-28 to 2025-12-01), mean `revenue` per order by `category`.
+
+**Mechanism:** not planted on its own: it follows from patterns 4 and 5. The weekend
+is short, and the long-tail categories (pattern 5) get only a handful of orders in
+it, so their means rest on very few orders and swing far from the norm.
+
+**Strength:** the weekend has 399 orders. Office ranks second of 18 categories by
+mean order revenue ($224.90), ahead of Rugs, on 3 orders. 13 of the 18 categories
+have fewer than 30 orders that weekend; Furniture, first, has 17.
+
+**How to reveal it:** a bar chart of mean order revenue per category, sorted by value,
+puts Office near the top and invites a conclusion. With the small-group flag
+(`min_n=30`), most of the ranking is hatched, and Office's 3 orders show in the
+labels (`show_n=True`); bootstrap intervals show how little the top of the ranking
+is worth.

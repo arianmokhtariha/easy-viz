@@ -3,10 +3,13 @@
 Covers: src/easy_viz/_layout.py
 
 ## Responsibilities
-The figure-level layout every plot shares, so no plot re-solves it:
+The figure-level layout and text every plot shares, so no plot re-solves it:
 - `escape_text()`: make user text safe from Plotly's LaTeX trigger
 - `grid_geometry()`: subplot spacing and figure height from pixel budgets
 - `apply_base_layout()`: theme template, title block and figure size
+- `auto_height()`: the height of a single-panel chart called with `height=None`
+- `format_value()`, `d3_format()`: values in labels and on axes
+- `text_px()`: an estimate of a label's width
 
 ## How it works
 - **`escape_text(text)`** replaces every `$` with the HTML entity `&#36;`. Two `$`
@@ -43,6 +46,23 @@ The figure-level layout every plot shares, so no plot re-solves it:
   - `width=None` uses `get_config().width`; `height=None` leaves the height unset, so
     Plotly auto-sizes
   - `None` or `""` for the title or subtitle shows no line and reserves no space
+
+- **`auto_height(width, *, theme, title, subtitle, bands=0)`** returns 0.4 × the
+  width (1400 → 560, the original module's size; a proportion, so a narrower figure
+  keeps its shape). Charts that stack categories down the page pass `bands`, the
+  category count: each band takes two text lines of the theme's font, plus the title
+  block and two bands for the value axis, and the height is the larger of the two.
+- **`format_value(value, spec)`** formats a number for labels and hover. A Python
+  format spec is applied as given; `None` is the automatic format: three significant
+  digits with k, M, B or T (`862k`, `1.08M`)
+  ([decision 0011](../../decisions/0011-automatic-value-format.md)). The suffix loop
+  tests the *rounded* text, so 999,999 becomes `1M`, never `1e+03k`.
+- **`d3_format(spec)`** returns the spec when it means the same in d3-format (the
+  language of Plotly's tick formats): an optional sign, thousands separators and
+  precision, and an `f`, `%` or `e` type. Otherwise `None`, and the axis keeps
+  Plotly's own format.
+- **`text_px(text, font_size)`** estimates a label's width (characters × size × 0.6,
+  longest `<br>` line), enough to decide whether labels fit their bars.
 
 ## Invariants
 - Every user-supplied string that reaches a figure through these helpers is escaped.

@@ -71,6 +71,14 @@ def test_series_colours_stand_out_from_the_plot_area(theme: Theme) -> None:
         assert contrast_ratio(color, theme.plot_background) >= MARK_CONTRAST, color
 
 
+@BUILTINS
+def test_value_coloured_marks_stay_visible_at_every_value(theme: Theme) -> None:
+    # Bars coloured by value: the smallest one must not vanish into the plot area.
+    for position, color in theme.marker_sequential_scale:
+        ratio = contrast_ratio(color, theme.plot_background)
+        assert ratio >= MARK_CONTRAST, (position, color, ratio)
+
+
 def test_builtins_are_in_parity() -> None:
     assert set(get_args(ThemeName)) == set(BUILTIN_THEMES)
     assert len(DARK.colorway) == len(LIGHT.colorway)
