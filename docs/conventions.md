@@ -20,8 +20,18 @@ One name per concept, in every function.
 | `sort_by`, `ascending`, `top_n` | ordering and truncation of categories |
 | `orientation` | `Literal["vertical", "horizontal"]` |
 | `log_x`, `log_y` | log axes |
-| `value_format` | Python format spec (`".3g"`, `",.0f"`), never d3 format |
-| `color_map` | `dict[str, str]`: fixed colour per category, identical across charts |
+| `value_format` | Python format spec (`".3g"`, `",.0f"`), never d3 format; `None` = automatic (`862.3k`, `1.082M`, [decision 0011](decisions/0011-automatic-value-format.md)) |
+| `show_values`, `text_position` | write values on the marks; where (`"outside"`, `"inside"`, `"auto"`) |
+| `show_pct_of_total`, `show_n` | add each mark's share of the total, or its row count, to its label |
+| `other` | with `top_n`, fold the cut categories into one "Other" category |
+| `ci`, `ci_level` | confidence interval method (`"bootstrap"`, `"sem"`) and level |
+| `n_boot`, `random_state` | bootstrap resamples; seed (`int`, numpy `Generator` or `None`) |
+| `min_n` | flag groups built from fewer rows than this; `None` = no flag |
+| `barmode`, `bargap`, `bargroupgap` | how bar series share a category (`"group"`, `"stack"`, `"percent"`); gaps as fractions |
+| `color_by_value`, `colorscale`, `color_midpoint` | colour marks by their own value (`"sequential"`, `"diverging"`, `"sign"`); the scale; where the colour turns |
+| `avg_line`, `target` | reference lines at the average and at a target value |
+| `x_title`, `y_title` | axis titles of the `x` and `y` slots, wherever `orientation` draws them |
+| `color_map` | `dict[str, str]`: fixed colour per series (a `color` value or a `y` column), identical across charts |
 | `highlight` | category or categories to emphasise; the rest use the theme's dimmed colour |
 | `title`, `subtitle` | `subtitle` carries the method note or the measure |
 | `width`, `height` | px; `height=None` means auto-size |

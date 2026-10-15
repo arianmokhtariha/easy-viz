@@ -3,9 +3,8 @@
 Covers: src/easy_viz/__init__.py, src/easy_viz/_meta.py, src/easy_viz/_typing.py
 
 ## Responsibilities
-The library itself. Today it holds the foundation every plot function will be built
-on. No plot function exists yet: the first ones are `line_plot` and `bar_plot`
-([roadmap](../../../ROADMAP.md)).
+The library itself: the plot functions ([plots/](plots/index.md)), the statistics
+behind them ([stats/](stats/index.md)), and the foundation every plot is built on.
 
 The foundation's job: when a plot is ported, its function only holds plot logic.
 Accepting any table, validating options, normalising SQL types, laying out the title
@@ -14,8 +13,8 @@ way for every function (product principle 7, "Consistency is a feature").
 
 ## How it works
 **Public API.** `__init__.py` only re-exports names and lists them in `__all__`, which
-is exactly the public API: `EasyVizWarning`, `Theme`, `get_theme`, `set_theme`,
-`get_config`, `set_config`, `save`, `save_many`. Modules whose names start with `_`
+is exactly the public API: `bar_plot`, `EasyVizWarning`, `Theme`, `get_theme`,
+`set_theme`, `get_config`, `set_config`, `save`, `save_many`. Modules whose names start with `_`
 are internal and can change freely. `py.typed` marks the package as typed, so type
 checkers in users' projects read its annotations.
 
@@ -25,15 +24,17 @@ checkers in users' projects read its annotations.
 |---|---|---|
 | `_data.py` | [_data.md](_data.md) | the only module that touches user tables: intake, column and dtype checks, SQL type normalisation, ISO-date parsing, null dropping, aggregation, exit to numpy |
 | `_validate.py` | [_validate.md](_validate.md) | runtime option checks, and the one formatter for every error and warning message |
-| `_layout.py` | [_layout.md](_layout.md) | `escape_text` (the `$` fix), `grid_geometry` (pixel-budget subplot spacing), `apply_base_layout` (template, title block, size) |
+| `_layout.py` | [_layout.md](_layout.md) | `escape_text` (the `$` fix), `grid_geometry` (pixel-budget subplot spacing), `apply_base_layout` (template, title block, size), `auto_height`, value formatting (`format_value`, `d3_format`), `text_px` |
 | `_warnings.py` | [_warnings.md](_warnings.md) | `EasyVizWarning`, and `warn()`, which points the warning at the user's call |
 | `_meta.py` | this page | trace roles and `tag()` |
 | `_typing.py` | this page | type aliases shared by the package |
 | `config.py` | [config.md](config.md) | global output defaults: figure width, export scale |
 | `export.py` | [export.md](export.md) | `save` and `save_many`: static image export through kaleido and Chrome |
 | `theme/` | [theme/index.md](theme/index.md) | the `Theme` dataclass, the built-in `dark` and `light` themes, global and per-call theme, Plotly templates |
+| `plots/` | [plots/index.md](plots/index.md) | the public plot functions, one module per family |
+| `stats/` | [stats/index.md](stats/index.md) | statistics behind the plots (confidence intervals) |
 
-**How a plot function will use them**, in order:
+**How a plot function uses them**, in order:
 1. Check its options with `_validate` (choices, conflicts, ranges).
 2. Turn `df` into a validated, normalised narwhals frame with `_data` (`load`,
    `require_numeric`, `parse_time`, `drop_nulls`, `aggregate`).

@@ -13,14 +13,16 @@ they depend on each other, and links to the doc that owns each one.
 | Part | Directory | Doc |
 |---|---|---|
 | Library package | `src/easy_viz/` | [easy_viz/index.md](easy_viz/index.md) |
+| Plot functions | `src/easy_viz/plots/` | [easy_viz/plots/index.md](easy_viz/plots/index.md) |
+| Statistics | `src/easy_viz/stats/` | [easy_viz/stats/index.md](easy_viz/stats/index.md) |
 | Themes | `src/easy_viz/theme/` | [easy_viz/theme/index.md](easy_viz/theme/index.md) |
 | Tests and repository-wide checks | `tests/` | [tests/index.md](tests/index.md) |
 | Developer scripts | `scripts/` | [scripts/index.md](scripts/index.md) |
 | Gallery and showcase data | `gallery/` | [gallery/index.md](gallery/index.md) |
 | Continuous integration | `.github/` | [ci/index.md](ci/index.md) |
 
-**Layers of the library.** The package currently holds the foundation; plot functions
-(`plots/`) and their statistics (`stats/`) arrive with the first ported plots.
+**Layers of the library.** Plot functions (`plots/`) sit on top of the foundation and
+take their numbers from the statistics layer (`stats/`).
 
 ```
 user table ──► _data ──► (stats/) ──► traces ──► _layout ──► go.Figure

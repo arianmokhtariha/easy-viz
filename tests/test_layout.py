@@ -4,8 +4,16 @@ import plotly.graph_objects as go
 import pytest
 from plotly.subplots import make_subplots
 
-from easy_viz._layout import apply_base_layout, escape_text, grid_geometry
+from easy_viz._layout import (
+    apply_base_layout,
+    auto_height,
+    d3_format,
+    escape_text,
+    format_value,
+    grid_geometry,
+)
 from easy_viz.config import get_config, set_config
+from easy_viz.theme import get_theme
 from easy_viz.theme.registry import DARK, LIGHT
 
 
@@ -149,3 +157,54 @@ def test_each_line_break_adds_a_line_to_the_top_margin() -> None:
     assert three_subtitle_lines.pop() - single == round(
         2 * DARK.subtitle_font_size * 1.5
     )
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (862_289.0, "862.3k"),
+        (1_081_928.0, "1.082M"),
+        (100_499.0, "100.5k"),  # three digits would show 100k, 0.5 % off
+        (15_000.0, "15k"),  # trailing zeros are dropped
+        (1_418.0, "1,418"),  # thousands that fit four digits need no suffix
+        (9_999.6, "10k"),  # ...unless rounding carries them to the next unit
+        (999_999.0, "1M"),  # rounding carries into the next unit, never "1e+03k"
+        (-2_500.0, "-2,500"),
+        (-25_000.0, "-25k"),
+        (939.0, "939"),
+        (0.4213, "0.4213"),
+        (4.2e12, "4.2T"),
+    ],
+)
+def test_the_automatic_value_format(value: float, expected: str) -> None:
+    assert format_value(value, None) == expected
+
+
+def test_an_explicit_value_format_is_a_python_spec() -> None:
+    assert format_value(1234.5, ",.0f") == "1,234"
+
+
+def test_auto_height_keeps_the_aspect_and_grows_with_category_bands() -> None:
+    theme = get_theme("dark")
+    flat = auto_height(1000, theme=theme, title="t", subtitle=None)
+    assert flat == 400
+    few = auto_height(1000, theme=theme, title="t", subtitle=None, bands=3)
+    many = auto_height(1000, theme=theme, title="t", subtitle=None, bands=40)
+    assert few == flat and many > flat
+
+
+@pytest.mark.parametrize(
+    ("spec", "expected"),
+    [
+        (",.0f", ",.0f"),
+        ("+.1%", "+.1%"),
+        (".2e", ".2e"),
+        (".3g", None),  # Python and d3 round g differently around exponents
+        ("$,.0f", None),  # not a Python spec at all
+        (None, None),
+    ],
+)
+def test_only_specs_that_mean_the_same_reach_the_axis(
+    spec: str | None, expected: str | None
+) -> None:
+    assert d3_format(spec) == expected

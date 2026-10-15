@@ -37,7 +37,9 @@ Steps, in order:
    as `image/png` in the same output, next to the JSON: GitHub shows the PNG, Jupyter
    and a docs site the interactive figure.
 6. **Write:** each executed notebook is written back as nbformat v4 with LF line
-   endings, without timing metadata or the kernel's exact Python version. Notebooks
+   endings, without timing metadata or the kernel's exact Python version. Warnings
+   printed by a cell lose the kernel's temporary file path and the echoed source
+   line (`scrub_warning_locations`), keeping `EasyVizWarning: <message>`. Notebooks
    are the build's product, so they are written before the side outputs below.
 7. **Review images:** each embedded PNG is saved as
    `.review/<notebook>/cell-NN.png` (`cell-NN-K` for several figures in one cell; NN
@@ -74,6 +76,10 @@ so the build and the checks can't disagree on what a gallery notebook or a tag i
   embedded PNG, so they get the export scale (2× by default) while notebooks stay
   small.
 - **`.review/` is gitignored** and only reflects the last build of each notebook.
+- **Python prints a warning with the file it came from**, which in a notebook is the
+  kernel's temporary file for the cell: a path in the user's home directory with the
+  kernel's process id. Committed as is, it would publish a local path and change on
+  every run, so the build strips it.
 - **On Windows, an image open in another program can't be deleted.** Old review or
   README images that can't be removed are listed at the end of the run instead of
   failing it; close them and re-run.

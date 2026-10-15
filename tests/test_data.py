@@ -14,6 +14,7 @@ from easy_viz._data import (
     aggregate,
     column_kind,
     drop_nulls,
+    group_arrays,
     load,
     parse_time,
     require_numeric,
@@ -491,3 +492,32 @@ def test_filtered_pandas_frame_with_gaps_in_its_index() -> None:
     frame = load(native, "f", {"x": "k", "y": "v"})
     out, _ = aggregate(frame, "f", {"x": "k"}, ["v"], "median")
     assert out.rows() == [("z", 2.0), ("a", 6.0)]
+
+
+def test_group_arrays_split_values_by_key_in_first_appearance_order(
+    make_frame: MakeFrame,
+) -> None:
+    slots = {"x": "region", "c": "quarter", "y": "revenue"}
+    frame = load(make_frame(SALES), "f", slots)
+    groups = group_arrays(frame, ["region", "quarter"], "revenue")
+    assert list(groups) == [
+        ("North", "Q1"),
+        ("South", "Q1"),
+        ("North", "Q2"),
+        ("East", "Q1"),
+    ]
+    # Rows keep their order inside a group.
+    np.testing.assert_array_equal(groups["North", "Q1"], [10.0, 60.0])
+    np.testing.assert_array_equal(groups["South", "Q1"], [20.0, 50.0])
+
+
+def test_group_arrays_follow_positions_in_a_gapped_pandas_index() -> None:
+    native = pd.DataFrame(
+        {"k": ["z", "a", "z", "a"], "v": [1.0, 2.0, 3.0, 10.0]}, index=[50, 3, 9, 1]
+    )
+    frame = load(native, "f", {"x": "k", "y": "v"})
+    groups = group_arrays(frame, ["k"], "v")
+    assert {k: v.tolist() for k, v in groups.items()} == {
+        ("z",): [1.0, 3.0],
+        ("a",): [2.0, 10.0],
+    }

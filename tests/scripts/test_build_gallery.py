@@ -187,3 +187,22 @@ def test_written_notebooks_are_lf_and_drop_the_python_patch_version(
     assert b"\r\n" not in raw  # Windows would otherwise write CRLF
     assert raw.endswith(b"\n")
     assert b"3.14.6" not in raw
+
+
+def test_warnings_lose_the_kernels_temporary_path_and_source_echo() -> None:
+    printed = (
+        r"C:\Users\someone\AppData\Local\Temp\ipykernel_5528\1331079986.py:2: "
+        "EasyVizWarning: bar_plot: dropped 4 of 10 rows.\n"
+        '  ev.bar_plot(income, "segment", "annual_income")\n'
+        "/tmp/ipykernel_77/42.py:9: UserWarning: second\n"
+        "  source()\n"
+        "plain output stays\n"
+    )
+    cell = new_code_cell(outputs=[new_output("stream", name="stderr", text=printed)])
+    nb = new_notebook(cells=[cell])
+    build.scrub_warning_locations(nb)
+    assert nb.cells[0].outputs[0]["text"] == (
+        "EasyVizWarning: bar_plot: dropped 4 of 10 rows.\n"
+        "UserWarning: second\n"
+        "plain output stays\n"
+    )

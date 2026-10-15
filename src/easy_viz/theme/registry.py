@@ -84,6 +84,15 @@ DARK = Theme(
         (0.9, "#4393C3"),
         (1.0, "#2166AC"),
     ),
+    # A blue ramp interpolated in OKLab that brightens with the value: its lowest
+    # stop still clears 3:1 on the plot area, so the smallest bar stays visible.
+    marker_sequential_scale=(
+        (0.0, "#3569b3"),
+        (0.25, "#5888c7"),
+        (0.5, "#7ba7da"),
+        (0.75, "#9fc6ed"),
+        (1.0, "#c4e6ff"),
+    ),
     severity_scale=((0.0, "#00CC96"), (0.5, "#FFA15A"), (1.0, "#EF553B")),
     font_family="Arial, Helvetica, sans-serif",
     font_size=13,
@@ -165,6 +174,15 @@ LIGHT = Theme(
         (0.8, "#6b91bc"),
         (0.9, "#497cb4"),
         (1.0, "#2166ac"),
+    ),
+    # The dark ramp's mirror: it darkens with the value, from a mid blue that
+    # clears 3:1 on the plot area to a deep navy.
+    marker_sequential_scale=(
+        (0.0, "#5d88d6"),
+        (0.25, "#476fb9"),
+        (0.5, "#33589c"),
+        (0.75, "#1f4081"),
+        (1.0, "#0b2a66"),
     ),
     severity_scale=((0.0, "#0a9e73"), (0.5, "#d9700a"), (1.0, "#e03e1a")),
     font_family="Arial, Helvetica, sans-serif",

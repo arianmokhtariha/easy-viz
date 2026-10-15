@@ -6,24 +6,45 @@ Where easy-viz stands. Updated in the PR that changes it.
 - Nothing in progress.
 
 ## Next
-- Plan 0003: port `line_plot` and `bar_plot` with their gallery notebooks, then
-  release 0.1.0. The first of these notebooks also proves the gallery template on a
-  real plot function.
+- Port `line_plot` with its gallery notebook (its own plan), then release 0.1.0.
 
 ## Later
+- Small multiples (`facet_col`, `facet_row`) for every plot function, in one plan
+  (decided with plan 0003)
+- Found while porting `bar_plot`:
+  - `highlight` for several series and on a time axis (today one series, no dates)
+  - reference-line labels that avoid value labels at the same height
+  - visual polish found in review: error-bar whiskers that cross labels at the
+    bar's base, a small gap between tick labels and horizontal bars, outside
+    labels near the plot's right edge, and fewer decimals on axis ticks than on
+    labels (`value_format=",.2f"` writes "120.00" on the axis)
+  - a bar corner radius in the theme, as the original report charts used
+  - a more accurate automatic value format (`_layout.format_value`, decision 0011):
+    no scientific notation for very small values, a sensible result beyond
+    trillions, one unit per chart instead of per label (no "950" next to "1.2k"),
+    full precision in the hover, and possibly using the column's
+    meaning (rates as percentages)
 - Port the remaining functions by family: distribution, relationship, comparison,
   timeseries, business, ml. One function at a time, each port also a redesign
   against the product principles: overlapping functions merge into one where
   nothing is lost; the improvements and features found along the way are built or
   listed here; and the showcase data grows the patterns that function's options
   reveal
-- Report features: waterfall, cohort heatmap, `highlight`, `color_map`, takeaway titles
+- Report features: waterfall, cohort heatmap, takeaway titles; `highlight` and
+  `color_map` in every function where they fit (built in `bar_plot`)
 - Docs site rendering the gallery notebooks
 - README showcase built from gallery images
 - Automated releases: a version bump merged to `main` builds in CI, creates the
   GitHub release and publishes to PyPI through trusted publishing
 
 ## Done
+- `bar_plot` (plan 0003): the first plot function, merging the original
+  `bar_plot` and `grouped_bar_plot`
+  ([decision 0010](docs/decisions/0010-one-bar-plot.md)); the first statistics
+  module (bootstrap and standard-error intervals, matching scipy exactly); automatic
+  value formatting ([decision 0011](docs/decisions/0011-automatic-value-format.md));
+  its gallery notebook, the first on a real plot function, with a new pattern in the
+  answer key (small groups at the top of a ranking)
 - Showcase dataset and gallery (plan 0002): Fernway, a fictional retailer in seven
   related tables with ten planted patterns and a tested answer key; the notebook
   template and a "Meet the data" notebook, with every chart starting from a SQL query

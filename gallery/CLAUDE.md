@@ -48,6 +48,13 @@ folder, fill it, and delete the notes. Sections in this order:
   result goes straight into the plot. Vary what is passed across notebooks (the
   query result itself, `.pl()`, `.df()`, `.to_arrow_table()`), never reshape
   between query and plot.
+- **Notebooks rebuild byte-identically** (the build's invariant), so:
+  - every query ends with `ORDER BY`: without it DuckDB may return rows in a
+    different order on each run, and plots keep the query's order
+  - raw rows that a plot aggregates are passed as pandas (`.df()`) or Arrow
+    (`.to_arrow_table()`), not polars: polars sums floats in parallel, and the last
+    digit of a sum changes between runs. Query results that are already aggregated
+    may be polars.
 - **Only the public API:** `import easy_viz as ev`, never internal modules.
 - **Every planted pattern is documented in `INSIGHTS.md`** and asserted by a test.
   Changing the generator must not silently remove a story.

@@ -4,7 +4,8 @@ Covers: nothing directly; the only module here, generate.py, has its own doc.
 
 ## Responsibilities
 `gallery/data/` holds the data every gallery notebook queries: the fictional retailer
-Fernway, as seven CSV tables with ten planted patterns. The product manager chose an
+Fernway, as seven CSV tables with ten planted patterns and one that follows from
+them. The product manager chose an
 online retailer with a membership (2026-10-12): it can hold every planted pattern
 naturally, and it differs from food delivery, which the owner's Delivr portfolio
 project already covers.

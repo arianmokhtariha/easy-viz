@@ -14,6 +14,29 @@ from easy_viz.theme.theme import Theme, build_template
 # the title and subtitle without overlap. A typographic ratio, not a style choice.
 _LINE_HEIGHT = 1.5
 
+# Height over width of a single-panel chart: 560 px at the default 1400 px width,
+# the original module's size. A proportion, so a narrower figure keeps its shape.
+_ASPECT = 0.4
+
+# Text lines one category band takes in a chart that stacks categories down the
+# page (horizontal bars): the tick label plus the gap to the next one.
+_BAND_LINES = 2
+
+# Average glyph width as a share of the font size (Arial-like fonts): good enough
+# to tell whether a label fits a bar, not to place text.
+_GLYPH_WIDTH = 0.6
+
+# Python format types that need an int: decimal, binary, octal, hex, locale number.
+_INTEGER_TYPES = frozenset("dboxXn")
+
+# Significant digits of the automatic value format. Four keep every label within
+# 0.05 % of its value (three allow 0.5 %) and add at most one character, since
+# trailing zeros are dropped ("1.5k" stays "1.5k").
+_SIGNIFICANT_DIGITS = 4
+
+# Suffixes of the automatic value format: thousands, millions, billions, trillions.
+_SUFFIXES = ("", "k", "M", "B", "T")
+
 # The line breaks Plotly honours in text: <br>, <br/>, <br />, any letter case.
 _LINE_BREAK = re.compile(r"<br\s*/?>", re.IGNORECASE)
 
@@ -46,6 +69,70 @@ def escape_text(text: str) -> str:
         ``text`` with each ``$`` replaced by ``&#36;``.
     """
     return text.replace("$", "&#36;")
+
+
+def format_value(value: float, spec: str | None) -> str:
+    """Format a number for a label or hover text.
+
+    Parameters
+    ----------
+    value : float
+        The number.
+    spec : str or None
+        A Python format spec (``",.0f"``), or ``None`` for the automatic format:
+        four significant digits, with k, M, B or T for thousands, millions,
+        billions and trillions (``862.3k``, ``1.082M``, ``0.4213``), so a label
+        is never more than 0.05 % from its value. Values from 1,000 to 9,999 are
+        written whole with a thousands separator (``1,418``). Python
+        specs have no such suffixes, and ``.3g`` alone writes ``8.62e+05``.
+
+    Returns
+    -------
+    str
+        The formatted value.
+    """
+    if spec is not None:
+        # Integer types (",d" for counts) refuse floats: round, as the spec asks.
+        if spec[-1:] in _INTEGER_TYPES:
+            return format(round(value), spec)
+        return format(value, spec)
+    digits = _SIGNIFICANT_DIGITS
+    rounded = float(f"{value:.{digits}g}")
+    # Whole thousands that fit the digits need no suffix: "1,418" is exact, as
+    # short as "1.418k", and reads like a "939" next to it.
+    if 1000 <= abs(rounded) < 10**digits:
+        return f"{rounded:,.0f}"
+    step, scaled = 0, value
+    # Rounding can carry into the next unit (999,999 is 1e+03k), so test the
+    # rounded text, not the raw value.
+    while step < len(_SUFFIXES) - 1 and abs(float(f"{scaled:.{digits}g}")) >= 1000:
+        step += 1
+        scaled = value / 1000**step
+    return f"{scaled:.{digits}g}{_SUFFIXES[step]}"
+
+
+# Python format specs that mean the same in d3-format, which Plotly uses for axis
+# ticks: an optional sign, thousands separators and precision, and a fixed-point,
+# percent or exponent type. Other specs differ between the two languages.
+_SHARED_SPEC = re.compile(r"[+\- ]?,?(?:\.\d+)?[f%e]")
+
+
+def d3_format(spec: str | None) -> str | None:
+    """Return ``spec`` as a Plotly tick format when it means the same there.
+
+    Python format specs and d3-format agree on the common forms (``",.0f"``,
+    ``"+.1%"``, ``".2e"``), so axis ticks can match the labels. For any other
+    spec, and for ``None``, return ``None`` and leave Plotly's own tick format.
+    """
+    if spec is not None and _SHARED_SPEC.fullmatch(spec):
+        return spec
+    return None
+
+
+def text_px(text: str, font_size: int) -> float:
+    """Estimate the width in px of ``text`` (its longest ``<br>`` line)."""
+    lines = _LINE_BREAK.split(text)
+    return max(len(line) for line in lines) * font_size * _GLYPH_WIDTH
 
 
 def _width(width: int | None) -> int:
@@ -155,6 +242,45 @@ def _title_margin(theme: Theme, *, title: str | None, subtitle: str | None) -> i
     subtitle_px = theme.subtitle_font_size * _line_count(subtitle)
     lines = title_px + subtitle_px
     return round(theme.title_top_px + lines * _LINE_HEIGHT + theme.title_gap_px)
+
+
+def auto_height(
+    width: int | None,
+    *,
+    theme: Theme,
+    title: str | None,
+    subtitle: str | None,
+    bands: int = 0,
+) -> int:
+    """Figure height for a single-panel chart called with ``height=None``.
+
+    Parameters
+    ----------
+    width : int or None
+        Figure width in px; ``None`` uses ``easy_viz.config``.
+    theme : Theme
+        Source of the font and title sizes.
+    title, subtitle : str or None
+        The title block shown, which takes its share of the height.
+    bands : int, default 0
+        Categories stacked down the page (horizontal bars). Each needs room
+        for its label, so the height grows with them; 0 for charts whose
+        categories run across.
+
+    Returns
+    -------
+    int
+        ``width`` x 0.4, or more when the category bands need it.
+    """
+    height = round(_width(width) * _ASPECT)
+    if bands:
+        band = theme.font_size * _LINE_HEIGHT * _BAND_LINES
+        # Below the bands: the value axis tick labels and its title.
+        needed = _title_margin(theme, title=title, subtitle=subtitle) + band * (
+            bands + 2
+        )
+        height = max(height, round(needed))
+    return height
 
 
 def apply_base_layout(

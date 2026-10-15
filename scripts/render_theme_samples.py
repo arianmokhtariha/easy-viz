@@ -2,10 +2,10 @@
 
 Every theme role appears on the sheet, so a single look shows whether a theme
 works: title and subtitle (with ``$`` signs), the colorway, legend, reference
-lines, the "Other" and dimmed colours, both label-carrying heatmap scales, the
-marker colour bar, the severity ramp, positive/negative, overlay boxes and a polar
-panel. Plot functions don't exist yet, so the sheet is built from raw Plotly plus
-the shared layout helpers, the same ones every plot uses.
+lines, the "Other" and dimmed colours, both label-carrying heatmap scales, both
+marker scales, the severity ramp, positive/negative, overlay boxes and a polar
+panel. The sheet is built from raw Plotly plus the shared layout helpers, the same
+ones every plot uses, so it shows the theme on its own, apart from any plot.
 
 Run with ``uv run python scripts/render_theme_samples.py``.
 """
@@ -32,9 +32,10 @@ PANELS = (
     "Diverging scale with cell labels",
     "Sequential scale with cell labels",
     "Marker diverging scale",
-    "Severity ramp",
+    "Severity ramp: % missing",
     "Positive and negative",
     "Polar grid with translucent fills",
+    "Marker sequential scale: bars coloured by value",
 )
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct")
 
@@ -235,7 +236,7 @@ def _add_severity(fig: go.Figure, theme: Theme) -> None:
         col=1,
     )
     fig.update_yaxes(autorange="reversed", row=3, col=1)
-    fig.update_xaxes(title_text="% missing", range=[0, 110], row=3, col=1)
+    fig.update_xaxes(range=[0, 110], row=3, col=1)
 
 
 def _add_change(fig: go.Figure, theme: Theme) -> None:
@@ -294,6 +295,25 @@ def _add_polar(fig: go.Figure, theme: Theme) -> None:
     fig.update_polars(domain_y=[low, high - 0.03])
 
 
+def _add_value_bars(fig: go.Figure, theme: Theme) -> None:
+    """Panel 10: bars coloured by their own value, smallest one included."""
+    values = [3, 9, 14, 22, 31, 38, 47, 55, 61, 70]
+    fig.add_trace(
+        go.Bar(
+            x=MONTHS,
+            y=values,
+            marker={
+                "color": values,
+                "colorscale": [list(stop) for stop in theme.marker_sequential_scale],
+                "line": {"color": theme.mark_outline, "width": 1},
+            },
+            showlegend=False,
+        ),
+        row=4,
+        col=1,
+    )
+
+
 def build_sheet(name: str, theme: Theme) -> go.Figure:
     """Return the sample sheet figure for one theme."""
     geometry = grid_geometry(
@@ -318,6 +338,7 @@ def build_sheet(name: str, theme: Theme) -> go.Figure:
         _add_severity,
         _add_change,
         _add_polar,
+        _add_value_bars,
     ):
         add(fig, theme)
     fig.update_yaxes(title_text="revenue ($ k)", row=1, col=1)

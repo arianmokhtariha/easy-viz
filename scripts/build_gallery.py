@@ -279,6 +279,29 @@ def drop_volatile_metadata(nb: NotebookNode) -> None:
     nb.metadata.get("language_info", {}).pop("version", None)
 
 
+# A warning as Python prints it from a notebook cell: the kernel's temporary file for
+# the cell (a local path with the kernel's process id), the line, then the warning;
+# the next line echoes the source. Neither the path nor the echo belongs in a
+# committed notebook.
+_CELL_WARNING = re.compile(
+    r"^[^\n]*ipykernel_\d+[\\/]\d+\.py:\d+: (?P<warning>\w+: [^\n]*)\n(?:  [^\n]*\n)?",
+    re.MULTILINE,
+)
+
+
+def scrub_warning_locations(nb: NotebookNode) -> None:
+    """Strip the kernel's temporary file paths from warnings in cell outputs.
+
+    They hold the user's home directory and a process id that changes on every
+    run, so they would leak a local path and make rebuilds differ. The warning
+    category and message are kept.
+    """
+    for cell in nb.cells:
+        for output in cell.get("outputs", []):
+            if output.get("output_type") == "stream":
+                output["text"] = _CELL_WARNING.sub(r"\g<warning>\n", output["text"])
+
+
 # --- I/O --------------------------------------------------------------------------
 
 
@@ -507,6 +530,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     # so a problem with .review/ or the README images can't lose them.
     for path, nb in executed.items():
         drop_volatile_metadata(nb)
+        scrub_warning_locations(nb)
         write_notebook(nb, REPO / path)
     kept = save_review_images(executed)
     # A failed notebook's tags were never read: its images are not stale.

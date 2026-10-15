@@ -7,7 +7,7 @@ Render one sample sheet per built-in theme to `.review/theme/<name>.png`
 (gitignored), so any theme or layout change can be judged by looking at it.
 
 ## How it works
-`uv run python scripts/render_theme_samples.py` builds a 3 × 3 subplot grid per
+`uv run python scripts/render_theme_samples.py` builds a grid of ten panels per
 built-in theme with raw Plotly and the shared layout helpers
 ([`grid_geometry`, `apply_base_layout`](../easy_viz/_layout.md)), the same ones plots
 use. Each panel exercises theme roles:
@@ -16,6 +16,7 @@ use. Each panel exercises theme roles:
 - `highlight`: one series in colour, the rest `dimmed`
 - heatmaps with cell labels on `diverging_scale` and on `sequential_scale`
 - markers on `marker_diverging_scale` with its colour bar
+- bars coloured by value on `marker_sequential_scale`, the smallest one included
 - bars on `severity_scale`; `positive` / `negative` bars with call-outs
 - a polar panel with translucent fills (`with_alpha`)
 

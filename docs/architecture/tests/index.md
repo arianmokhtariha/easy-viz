@@ -1,6 +1,6 @@
 # Tests
 
-Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py, tests/test_packaging.py, tests/test_gallery.py, tests/test_showcase_data.py, tests/scripts/test_build_gallery.py
+Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py, tests/test_packaging.py, tests/test_gallery.py, tests/test_showcase_data.py, tests/scripts/test_build_gallery.py, tests/stats/test_intervals.py, tests/plots/test_comparison.py
 
 ## Responsibilities
 Prove that the library is correct and that the repository stays consistent with
@@ -32,7 +32,7 @@ failure message names the file, the rule and the fix.
 
 ### `test_contract.py`
 Holds `REGISTRY`: one `ContractCase` (function, sample data, minimal call) per public
-plot function, empty until the first plot is ported. Each case is run on all three
+plot function (today `bar_plot`). Each case is run on all three
 backends and must:
 - return a `go.Figure`;
 - leave the input table unchanged (compared through narwhals: schema and content, with
@@ -43,8 +43,8 @@ backends and must:
 
 A separate test lists the callables in `easy_viz.__all__` that are defined under
 `easy_viz.plots` and fails for any that is not registered, so a plot cannot ship
-unchecked. While the registry is empty, the per-function tests skip with that reason
-instead of passing silently. The checks themselves are tested against small fake
+unchecked. Were the registry ever empty, the per-function tests would skip with that
+reason instead of passing silently. The checks themselves are tested against small fake
 functions that break each rule.
 
 ### `test_layering.py`
@@ -67,8 +67,8 @@ that restyling happens in one place:
 
 The exact definition, with what is deliberately not detected, is in the test module's
 docstring. The scan reads the syntax tree, so comments and docstrings never trigger
-it. A table of positive and negative snippets exercises the detector, because the real
-directory is empty today.
+it. A table of positive and negative snippets exercises the detector, so the rule is
+proven to fail on each kind of literal, not only to pass on today's code.
 
 ### `test_knowledge_base.py`
 Turns the placement rules for the documentation into checks. On the real repository:

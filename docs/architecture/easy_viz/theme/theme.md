@@ -18,7 +18,10 @@ Covers: src/easy_viz/theme/theme.py
   identity: outliers, connectors, an "overall" line), `mark_outline`, `reference` and
   `reference_secondary` (e.g. mean and median lines), `positive` / `negative`.
 - Scales: `cell_text`, `diverging_scale` and `sequential_scale` (safe under
-  `cell_text`), `marker_diverging_scale` (markers carry no text), `severity_scale`.
+  `cell_text`), `marker_diverging_scale` (markers carry no text),
+  `marker_sequential_scale` (marks coloured by value; its lowest colour stays visible
+  on the plot area, unlike `sequential_scale`, which starts at the plot background),
+  `severity_scale`.
 - Fonts: `font_family`, `font_size`, `title_font_size`, `subtitle_font_size`,
   `label_font_size`.
 - Layout in px: `title_top_px`, `title_gap_px` (the title block), `row_gap_px`,
