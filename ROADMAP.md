@@ -14,11 +14,15 @@ Where easy-viz stands. Updated in the PR that changes it.
 - Found while porting `bar_plot`:
   - `highlight` for several series and on a time axis (today one series, no dates)
   - reference-line labels that avoid value labels at the same height
+  - visual polish found in review: error-bar whiskers that cross labels at the
+    bar's base, a small gap between tick labels and horizontal bars, outside
+    labels near the plot's right edge, and fewer decimals on axis ticks than on
+    labels (`value_format=",.2f"` writes "120.00" on the axis)
   - a bar corner radius in the theme, as the original report charts used
   - a more accurate automatic value format (`_layout.format_value`, decision 0011):
     no scientific notation for very small values, a sensible result beyond
     trillions, one unit per chart instead of per label (no "950" next to "1.2k"),
-    enough digits to tell close values apart, and possibly using the column's
+    full precision in the hover, and possibly using the column's
     meaning (rates as percentages)
 - Port the remaining functions by family: distribution, relationship, comparison,
   timeseries, business, ml. One function at a time, each port also a redesign

@@ -29,6 +29,11 @@ _GLYPH_WIDTH = 0.6
 # Python format types that need an int: decimal, binary, octal, hex, locale number.
 _INTEGER_TYPES = frozenset("dboxXn")
 
+# Significant digits of the automatic value format. Four keep every label within
+# 0.05 % of its value (three allow 0.5 %) and add at most one character, since
+# trailing zeros are dropped ("1.5k" stays "1.5k").
+_SIGNIFICANT_DIGITS = 4
+
 # Suffixes of the automatic value format: thousands, millions, billions, trillions.
 _SUFFIXES = ("", "k", "M", "B", "T")
 
@@ -75,8 +80,10 @@ def format_value(value: float, spec: str | None) -> str:
         The number.
     spec : str or None
         A Python format spec (``",.0f"``), or ``None`` for the automatic format:
-        three significant digits, with k, M, B or T for thousands, millions,
-        billions and trillions (``862k``, ``1.08M``, ``-2.5k``, ``0.42``). Python
+        four significant digits, with k, M, B or T for thousands, millions,
+        billions and trillions (``862.3k``, ``1.082M``, ``0.4213``), so a label
+        is never more than 0.05 % from its value. Values from 1,000 to 9,999 are
+        written whole with a thousands separator (``1,418``). Python
         specs have no such suffixes, and ``.3g`` alone writes ``8.62e+05``.
 
     Returns
@@ -89,13 +96,19 @@ def format_value(value: float, spec: str | None) -> str:
         if spec[-1:] in _INTEGER_TYPES:
             return format(round(value), spec)
         return format(value, spec)
+    digits = _SIGNIFICANT_DIGITS
+    rounded = float(f"{value:.{digits}g}")
+    # Whole thousands that fit the digits need no suffix: "1,418" is exact, as
+    # short as "1.418k", and reads like a "939" next to it.
+    if 1000 <= abs(rounded) < 10**digits:
+        return f"{rounded:,.0f}"
     step, scaled = 0, value
     # Rounding can carry into the next unit (999,999 is 1e+03k), so test the
     # rounded text, not the raw value.
-    while step < len(_SUFFIXES) - 1 and abs(float(f"{scaled:.3g}")) >= 1000:
+    while step < len(_SUFFIXES) - 1 and abs(float(f"{scaled:.{digits}g}")) >= 1000:
         step += 1
         scaled = value / 1000**step
-    return f"{scaled:.3g}{_SUFFIXES[step]}"
+    return f"{scaled:.{digits}g}{_SUFFIXES[step]}"
 
 
 # Python format specs that mean the same in d3-format, which Plotly uses for axis

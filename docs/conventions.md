@@ -20,7 +20,7 @@ One name per concept, in every function.
 | `sort_by`, `ascending`, `top_n` | ordering and truncation of categories |
 | `orientation` | `Literal["vertical", "horizontal"]` |
 | `log_x`, `log_y` | log axes |
-| `value_format` | Python format spec (`".3g"`, `",.0f"`), never d3 format; `None` = automatic (`862k`, `1.08M`, [decision 0011](decisions/0011-automatic-value-format.md)) |
+| `value_format` | Python format spec (`".3g"`, `",.0f"`), never d3 format; `None` = automatic (`862.3k`, `1.082M`, [decision 0011](decisions/0011-automatic-value-format.md)) |
 | `show_values`, `text_position` | write values on the marks; where (`"outside"`, `"inside"`, `"auto"`) |
 | `show_pct_of_total`, `show_n` | add each mark's share of the total, or its row count, to its label |
 | `other` | with `top_n`, fold the cut categories into one "Other" category |

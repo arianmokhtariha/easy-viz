@@ -162,12 +162,17 @@ def test_each_line_break_adds_a_line_to_the_top_margin() -> None:
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        (862_289.0, "862k"),
-        (1_081_928.0, "1.08M"),
+        (862_289.0, "862.3k"),
+        (1_081_928.0, "1.082M"),
+        (100_499.0, "100.5k"),  # three digits would show 100k, 0.5 % off
+        (15_000.0, "15k"),  # trailing zeros are dropped
+        (1_418.0, "1,418"),  # thousands that fit four digits need no suffix
+        (9_999.6, "10k"),  # ...unless rounding carries them to the next unit
         (999_999.0, "1M"),  # rounding carries into the next unit, never "1e+03k"
-        (-2_500.0, "-2.5k"),
+        (-2_500.0, "-2,500"),
+        (-25_000.0, "-25k"),
         (939.0, "939"),
-        (0.4213, "0.421"),
+        (0.4213, "0.4213"),
         (4.2e12, "4.2T"),
     ],
 )

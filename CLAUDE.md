@@ -225,7 +225,7 @@ Summaries only; the records are the source.
 - [0008](docs/decisions/0008-tracked-agent-guides.md): agent guides and agent definitions are tracked in git and excluded from the build.
 - [0009](docs/decisions/0009-gallery-sql-duckdb.md): gallery notebooks query the showcase data with SQL through DuckDB; the gallery builds on Python 3.14 until DuckDB ships a 3.15 wheel.
 - [0010](docs/decisions/0010-one-bar-plot.md): one bar function; `grouped_bar_plot` merges into `bar_plot`, `pareto_plot` stays separate, "Other" is opt-in.
-- [0011](docs/decisions/0011-automatic-value-format.md): `value_format=None` formats values automatically (`862k`); a given format is a Python spec.
+- [0011](docs/decisions/0011-automatic-value-format.md): `value_format=None` formats values automatically (`862.3k`); a given format is a Python spec.
 
 ## Dependencies
 - `pyproject.toml` gives runtime dependencies lower bounds only, never upper caps, so

@@ -291,8 +291,9 @@ def bar_plot(
         The hover always has the value.
     value_format : str or None, default None
         Python format spec for values in labels, hover and reference lines,
-        e.g. ``",.0f"`` or ``".1%"``. ``None``: three significant digits with
-        k, M, B for thousands, millions, billions (``862k``, ``1.08M``).
+        e.g. ``",.0f"`` or ``".1%"``. ``None``: four significant digits with
+        k, M, B for thousands, millions, billions (``862.3k``, ``1.082M``), at
+        most 0.05 % from the value.
     text_position : {"outside", "inside", "auto"} or None, default None
         Where labels sit. ``None``: outside for side-by-side bars; inside for
         stacked ones; inside at the base of the bar with ``ci``, clear of the
@@ -1042,7 +1043,7 @@ def _draw(o: _Options, bars: _Bars, theme: Theme, is_time: bool) -> go.Figure:
         fig.add_trace(_stack_totals(o, bars, labels, theme, horizontal))
 
     category_axis: dict[str, Any] = {
-        "title": {"text": escape_text(o.x_title if o.x_title is not None else o.x)}
+        "title": {"text": _axis_title(o.x_title if o.x_title is not None else o.x)}
     }
     if not is_time:
         category_axis.update(
@@ -1055,7 +1056,7 @@ def _draw(o: _Options, bars: _Bars, theme: Theme, is_time: bool) -> go.Figure:
         value_title = _value_label(o)
         if o.barmode == "percent":
             value_title = f"Share of {value_title[0].lower()}{value_title[1:]}"
-    value_axis: dict[str, Any] = {"title": {"text": escape_text(value_title)}}
+    value_axis: dict[str, Any] = {"title": {"text": _axis_title(value_title)}}
     tickformat = d3_format(o.value_format)
     if o.barmode == "percent":
         value_axis["ticksuffix"] = "%"
@@ -1116,6 +1117,11 @@ def _labels_fit(
     slot = plot / len(bars.categories) * (1 - o.bargap)
     bar = slot / n_series * (1 - (o.bargroupgap if n_series > 1 else 0))
     return widest <= bar
+
+
+def _axis_title(text: str) -> str | None:
+    """Escape an axis title; ``""`` becomes ``None``, so Plotly reserves no space."""
+    return escape_text(text) if text else None
 
 
 def _plotly_list(values: npt.NDArray[np.float64]) -> list[float | None]:

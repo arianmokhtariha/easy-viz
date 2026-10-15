@@ -15,10 +15,15 @@ suffixes (d3's `s` has no Python equivalent), so no single spec reads well for b
 ## Decision
 Proposed during the visual review of `bar_plot`; approved by the product manager on
 2026-10-15, as the default for every plot.
-- **`value_format=None` is the default** and means automatic: three significant
+- **`value_format=None` is the default** and means automatic: four significant
   digits, with k, M, B or T for thousands, millions, billions and trillions
-  (`862k`, `1.08M`, `-2.5k`, `0.42`). Implemented once, in
-  `_layout.format_value`, for every plot.
+  (`862.3k`, `1.082M`, `-25k`, `0.4213`). A label is then never more than 0.05 %
+  from its value, and only values less than about 0.1 % apart can share a label;
+  three digits allowed 0.5 % and 1 %. Labels grow by at most one character, because
+  trailing zeros are dropped. Values from 1,000 to 9,999 are written whole with a
+  thousands separator (`1,418`, not `1.418k`): exact, as short, and consistent
+  with `939` beside them. The product manager chose the higher accuracy
+  (2026-10-15). Implemented once, in `_layout.format_value`, for every plot.
 - **A given `value_format` is a Python format spec**, as before, applied to labels,
   hover and reference lines. When it means the same in d3-format (a sign, thousands
   separators, a precision, and an `f`, `%` or `e` type), it also formats the value

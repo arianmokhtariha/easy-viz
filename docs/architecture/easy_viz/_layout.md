@@ -54,8 +54,10 @@ The figure-level layout and text every plot shares, so no plot re-solves it:
   block and two bands for the value axis, and the height is the larger of the two.
 - **`format_value(value, spec)`** formats a number for labels and hover. A Python
   format spec is applied as given (integer types such as `",d"` round the value
-  first, since Python refuses a float for them); `None` is the automatic format: three significant
-  digits with k, M, B or T (`862k`, `1.08M`)
+  first, since Python refuses a float for them); `None` is the automatic format: four significant
+  digits (`_SIGNIFICANT_DIGITS`) with k, M, B or T (`862.3k`, `1.082M`), at most
+  0.05 % from the value; from 1,000 to 9,999 the whole number with a thousands
+  separator (`1,418`), since it fits the digits without a suffix
   ([decision 0011](../../decisions/0011-automatic-value-format.md)). The suffix loop
   tests the *rounded* text, so 999,999 becomes `1M`, never `1e+03k`.
 - **`d3_format(spec)`** returns the spec when it means the same in d3-format (the
