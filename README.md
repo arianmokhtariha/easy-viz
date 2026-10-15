@@ -13,6 +13,9 @@ parameters don't cover can still be done with Plotly.
 
 > **Status:** pre-alpha, under active development. Not on PyPI yet.
 
+The [gallery](gallery/) shows every function on a fictional retailer's data, starting
+from a SQL query each time.
+
 ## Development
 ```
 uv sync --all-extras --all-groups

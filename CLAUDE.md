@@ -223,6 +223,7 @@ Summaries only; the records are the source.
 - [0006](docs/decisions/0006-notebook-gallery.md): executed notebooks are the gallery and the source of README images.
 - [0007](docs/decisions/0007-immutable-global-defaults.md): theme and config are immutable values swapped by `set_*`; Plotly's default template is never touched.
 - [0008](docs/decisions/0008-tracked-agent-guides.md): agent guides and agent definitions are tracked in git and excluded from the build.
+- [0009](docs/decisions/0009-gallery-sql-duckdb.md): gallery notebooks query the showcase data with SQL through DuckDB; the gallery builds on Python 3.14 until DuckDB ships a 3.15 wheel.
 
 ## Dependencies
 - `pyproject.toml` gives runtime dependencies lower bounds only, never upper caps, so
@@ -299,8 +300,10 @@ uv run pytest                          # tests (export tests auto-skip without C
 uv run ruff check --fix .              # lint
 uv run ruff format .                   # format
 uv run mypy src                        # strict type check
-uv run pytest --nbmake gallery/       # execute every gallery notebook
-uv run python scripts/build_gallery.py   # regenerate data, notebooks, README images (plan 0002)
+# The gallery runs on Python 3.14 (decision 0009), in an isolated environment:
+uv run --isolated --python 3.14 python scripts/build_gallery.py   # data, notebooks, images
+uv run --isolated --python 3.14 python scripts/build_gallery.py --only <notebook>
+uv run --isolated --python 3.14 pytest --nbmake gallery/   # execute every notebook
 uv run python scripts/render_theme_samples.py   # theme sample sheets → .review/theme/
 uv run sphinx-build docs docs/_build   # build the docs site (once docs are set up)
 ```

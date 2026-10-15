@@ -58,6 +58,14 @@ jobs:
       - name: Test
         run: uv run pytest
 
+      # Runs every gallery notebook top to bottom, so a notebook that no longer
+      # works with the code fails here. The notebooks query the showcase data with
+      # DuckDB, which has no Python 3.15 wheel yet, so 3.15 skips this step for now.
+      # Temporary: remove the condition once DuckDB publishes a 3.15 wheel.
+      - name: Execute gallery notebooks
+        if: matrix.python-version != '3.15'
+        run: uv run pytest --nbmake gallery/
+
   # The lower bounds in pyproject.toml promise that easy-viz works with those
   # versions. The checks job only tests the newest (locked) ones, so this job
   # installs every runtime dependency at its lowest allowed version and tests

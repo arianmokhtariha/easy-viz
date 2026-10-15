@@ -3,11 +3,12 @@
 Where easy-viz stands. Updated in the PR that changes it.
 
 ## Now
-- [Plan 0002: Showcase dataset and gallery](docs/plans/0002-showcase-data-and-gallery.md) (proposed)
+- Nothing in progress.
 
 ## Next
 - Plan 0003: port `line_plot` and `bar_plot` with their gallery notebooks, then
-  release 0.1.0
+  release 0.1.0. The first of these notebooks also proves the gallery template on a
+  real plot function.
 
 ## Later
 - Port the remaining functions by family: distribution, relationship, comparison,
@@ -19,6 +20,12 @@ Where easy-viz stands. Updated in the PR that changes it.
   GitHub release and publishes to PyPI through trusted publishing
 
 ## Done
+- Showcase dataset and gallery (plan 0002): Fernway, a fictional retailer in seven
+  related tables with ten planted patterns and a tested answer key; the notebook
+  template and a "Meet the data" notebook, with every chart starting from a SQL query
+  (DuckDB); a build script that executes the notebooks, stores every figure as a
+  static image and as an interactive figure, and exports README images; checks that
+  every plot function, parameter and README image stays covered
 - Foundation (plan 0001): table intake for pandas, polars and pyarrow with SQL type
   normalisation, option validation, layout helpers, the `dark` and `light` themes,
   trace roles, global config and static export, plus repository-wide checks for

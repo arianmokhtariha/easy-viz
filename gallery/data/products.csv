@@ -1,0 +1,301 @@
+product_id,product_name,category,unit_cost,list_price
+P0001,Meadow Armchair,Furniture,138.1,228.99
+P0002,Alder Desk,Furniture,198.25,331.99
+P0003,Juniper Coffee Table,Furniture,290.81,638.99
+P0004,Slate Coffee Table,Furniture,126.99,226.99
+P0005,Juniper Desk,Furniture,43.42,106.99
+P0006,Alder Coffee Table,Furniture,189.74,314.99
+P0007,Alder Sofa,Furniture,245.56,458.99
+P0008,Nordic Coffee Table,Furniture,149.03,271.99
+P0009,Willow Armchair,Furniture,503.91,987.99
+P0010,Oak Sofa,Furniture,171.64,285.99
+P0011,Birch Desk,Furniture,115.11,288.99
+P0012,Slate Armchair,Furniture,96.41,173.99
+P0013,Alder Armchair,Furniture,243.66,498.99
+P0014,Birch Coffee Table,Furniture,181.95,295.99
+P0015,Harbor Sofa,Furniture,186.73,406.99
+P0016,Meadow Sofa,Furniture,89.19,220.99
+P0017,Oak Desk,Furniture,65.04,112.99
+P0018,Coastal Desk,Furniture,367.13,625.99
+P0019,Linen Desk,Furniture,226.78,456.99
+P0020,Linen Sofa,Furniture,117.62,195.99
+P0021,Ember Sofa,Furniture,155.98,365.99
+P0022,Slate Sofa,Furniture,233.02,442.99
+P0023,Slate Desk,Furniture,162.34,275.99
+P0024,Birch Sofa,Furniture,88.59,166.99
+P0025,Ember Coffee Table,Furniture,129.63,233.99
+P0026,Harbor Coffee Table,Furniture,348.84,564.99
+P0027,Ember Armchair,Furniture,69.3,130.99
+P0028,Birch Armchair,Furniture,113.7,210.99
+P0029,Nordic Desk,Furniture,147.66,355.99
+P0030,Nordic Sofa,Furniture,203.37,384.99
+P0031,Juniper Sofa,Furniture,117.41,203.99
+P0032,Juniper Armchair,Furniture,94.83,205.99
+P0033,Meadow Coffee Table,Furniture,181.99,313.99
+P0034,Linen Coffee Table,Furniture,120.69,208.99
+P0035,Harbor Armchair,Furniture,73.81,138.99
+P0036,Oak Coffee Table,Furniture,122.29,221.99
+P0037,Meadow Desk,Furniture,151.19,246.99
+P0038,Willow Desk,Furniture,63.92,113.99
+P0039,Coastal Coffee Table,Furniture,87.12,204.99
+P0040,Harbor Desk,Furniture,102.35,225.99
+P0041,Nordic Pan,Kitchen,15.35,35.99
+P0042,Slate Mixing Bowl,Kitchen,19.54,49.99
+P0043,Linen Kettle,Kitchen,30.9,49.99
+P0044,Alder Mixing Bowl,Kitchen,12.96,21.99
+P0045,Birch Mixing Bowl,Kitchen,17.04,27.99
+P0046,Alder Pan,Kitchen,39.16,70.99
+P0047,Coastal Pan,Kitchen,24.26,43.99
+P0048,Meadow Mixing Bowl,Kitchen,36.75,64.99
+P0049,Harbor Kettle,Kitchen,24.57,52.99
+P0050,Nordic Mixing Bowl,Kitchen,32.01,52.99
+P0051,Nordic Kettle,Kitchen,11.32,20.99
+P0052,Oak Mixing Bowl,Kitchen,25.51,42.99
+P0053,Willow Knife Set,Kitchen,18.12,38.99
+P0054,Coastal Knife Set,Kitchen,17.03,37.99
+P0055,Birch Kettle,Kitchen,25.05,44.99
+P0056,Meadow Kettle,Kitchen,13.99,30.99
+P0057,Birch Pan,Kitchen,16.29,39.99
+P0058,Alder Kettle,Kitchen,18.46,38.99
+P0059,Meadow Pan,Kitchen,16.45,40.99
+P0060,Linen Knife Set,Kitchen,13.47,23.99
+P0061,Nordic Knife Set,Kitchen,18.74,39.99
+P0062,Linen Mixing Bowl,Kitchen,16.08,40.99
+P0063,Ember Knife Set,Kitchen,31.53,58.99
+P0064,Juniper Knife Set,Kitchen,18.1,30.99
+P0065,Meadow Knife Set,Kitchen,76.46,124.99
+P0066,Slate Knife Set,Kitchen,26.42,45.99
+P0067,Slate Kettle,Kitchen,18.58,43.99
+P0068,Oak Kettle,Kitchen,104.71,168.99
+P0069,Juniper Kettle,Kitchen,14.24,34.99
+P0070,Alder Knife Set,Kitchen,27.24,43.99
+P0071,Birch Knife Set,Kitchen,32.45,58.99
+P0072,Oak Pan,Kitchen,22.92,38.99
+P0073,Willow Kettle,Kitchen,49.34,120.99
+P0074,Harbor Knife Set,Kitchen,26.18,48.99
+P0075,Slate Pan,Kitchen,14.74,24.99
+P0076,Willow Sheet Set,Bedding,48.72,103.99
+P0077,Willow Pillow,Bedding,28.04,49.99
+P0078,Alder Throw,Bedding,44.89,77.99
+P0079,Alder Duvet,Bedding,20.74,34.99
+P0080,Linen Sheet Set,Bedding,46.03,75.99
+P0081,Juniper Throw,Bedding,140.7,277.99
+P0082,Oak Duvet,Bedding,28.33,69.99
+P0083,Coastal Throw,Bedding,28.34,50.99
+P0084,Birch Sheet Set,Bedding,44.33,102.99
+P0085,Ember Duvet,Bedding,26.96,58.99
+P0086,Nordic Duvet,Bedding,47.9,87.99
+P0087,Oak Pillow,Bedding,84.32,153.99
+P0088,Harbor Pillow,Bedding,33.24,62.99
+P0089,Meadow Pillow,Bedding,66.49,124.99
+P0090,Harbor Throw,Bedding,19.3,44.99
+P0091,Harbor Duvet,Bedding,20.49,50.99
+P0092,Alder Sheet Set,Bedding,59.04,98.99
+P0093,Nordic Pillow,Bedding,38.61,81.99
+P0094,Ember Sheet Set,Bedding,50.11,88.99
+P0095,Linen Pillow,Bedding,36.97,65.99
+P0096,Linen Duvet,Bedding,16.3,38.99
+P0097,Linen Throw,Bedding,14.81,29.99
+P0098,Slate Pillow,Bedding,50.47,84.99
+P0099,Coastal Pillow,Bedding,20.35,34.99
+P0100,Alder Pillow,Bedding,52.88,92.99
+P0101,Meadow Throw,Bedding,71.26,165.99
+P0102,Oak Sheet Set,Bedding,13.98,31.99
+P0103,Oak Throw,Bedding,25.82,48.99
+P0104,Willow Throw,Bedding,42.1,74.99
+P0105,Coastal Sheet Set,Bedding,23.1,43.99
+P0106,Ember Throw,Bedding,14.83,30.99
+P0107,Alder Floor Lamp,Lighting,43.33,100.99
+P0108,Coastal Desk Lamp,Lighting,31.86,70.99
+P0109,Meadow Floor Lamp,Lighting,28.56,58.99
+P0110,Alder Desk Lamp,Lighting,40.32,97.99
+P0111,Oak Pendant,Lighting,25.05,59.99
+P0112,Juniper Pendant,Lighting,39.72,92.99
+P0113,Willow Pendant,Lighting,24.82,54.99
+P0114,Linen Pendant,Lighting,24.83,64.99
+P0115,Slate Floor Lamp,Lighting,74.3,160.99
+P0116,Birch Pendant,Lighting,82.09,132.99
+P0117,Linen Floor Lamp,Lighting,37.73,63.99
+P0118,Coastal Floor Lamp,Lighting,34.7,83.99
+P0119,Slate Pendant,Lighting,65.98,113.99
+P0120,Oak Desk Lamp,Lighting,18.66,41.99
+P0121,Coastal Pendant,Lighting,31.56,53.99
+P0122,Harbor Floor Lamp,Lighting,66.36,117.99
+P0123,Slate Desk Lamp,Lighting,46.93,75.99
+P0124,Meadow Desk Lamp,Lighting,34.4,64.99
+P0125,Linen Desk Lamp,Lighting,40.51,79.99
+P0126,Nordic Desk Lamp,Lighting,56.89,91.99
+P0127,Ember Floor Lamp,Lighting,31.9,52.99
+P0128,Willow Floor Lamp,Lighting,17.98,45.99
+P0129,Ember Pendant,Lighting,96.01,211.99
+P0130,Meadow Pendant,Lighting,26.72,43.99
+P0131,Nordic Pendant,Lighting,56.13,94.99
+P0132,Nordic Floor Lamp,Lighting,30.88,77.99
+P0133,Slate Area Rug,Rugs,63.45,160.99
+P0134,Oak Doormat,Rugs,78.03,167.99
+P0135,Harbor Doormat,Rugs,78.98,191.99
+P0136,Ember Area Rug,Rugs,171.43,333.99
+P0137,Linen Runner,Rugs,51.01,83.99
+P0138,Birch Doormat,Rugs,76.26,129.99
+P0139,Nordic Area Rug,Rugs,86.11,160.99
+P0140,Oak Runner,Rugs,142.54,280.99
+P0141,Willow Doormat,Rugs,49.09,92.99
+P0142,Coastal Runner,Rugs,110.62,232.99
+P0143,Harbor Runner,Rugs,46.36,107.99
+P0144,Alder Doormat,Rugs,90.4,216.99
+P0145,Meadow Doormat,Rugs,40.92,70.99
+P0146,Linen Area Rug,Rugs,44.89,77.99
+P0147,Ember Runner,Rugs,117.35,229.99
+P0148,Harbor Area Rug,Rugs,85.17,206.99
+P0149,Meadow Runner,Rugs,197.42,328.99
+P0150,Juniper Runner,Rugs,102.27,227.99
+P0151,Coastal Area Rug,Rugs,69.64,120.99
+P0152,Alder Area Rug,Rugs,38.05,63.99
+P0153,Nordic Runner,Rugs,33.96,54.99
+P0154,Nordic Doormat,Rugs,62.35,128.99
+P0155,Juniper Doormat,Rugs,59.21,124.99
+P0156,Ember Bookend,Decor,25.75,64.99
+P0157,Coastal Bookend,Decor,17.82,37.99
+P0158,Nordic Mirror,Decor,25.53,55.99
+P0159,Birch Vase,Decor,10.91,23.99
+P0160,Coastal Vase,Decor,8.64,21.99
+P0161,Meadow Mirror,Decor,11.1,20.99
+P0162,Juniper Bookend,Decor,19.7,43.99
+P0163,Birch Bookend,Decor,29.92,58.99
+P0164,Slate Vase,Decor,16.16,34.99
+P0165,Alder Bookend,Decor,23.31,49.99
+P0166,Oak Mirror,Decor,32.64,57.99
+P0167,Alder Mirror,Decor,23.82,58.99
+P0168,Harbor Bookend,Decor,26.9,52.99
+P0169,Willow Bookend,Decor,13.18,28.99
+P0170,Oak Bookend,Decor,17.58,33.99
+P0171,Slate Bookend,Decor,5.53,13.99
+P0172,Nordic Vase,Decor,17.63,30.99
+P0173,Linen Mirror,Decor,19.0,35.99
+P0174,Linen Vase,Decor,10.51,23.99
+P0175,Harbor Mirror,Decor,21.95,49.99
+P0176,Oak Bath Mat,Bath,19.39,39.99
+P0177,Alder Bath Mat,Bath,6.25,15.99
+P0178,Juniper Bath Mat,Bath,13.5,29.99
+P0179,Nordic Towel Set,Bath,14.31,24.99
+P0180,Harbor Towel Set,Bath,14.08,28.99
+P0181,Coastal Bath Mat,Bath,8.66,20.99
+P0182,Meadow Soap Dish,Bath,12.26,24.99
+P0183,Harbor Soap Dish,Bath,23.46,59.99
+P0184,Alder Towel Set,Bath,8.96,21.99
+P0185,Juniper Towel Set,Bath,6.54,16.99
+P0186,Slate Bath Mat,Bath,11.72,24.99
+P0187,Birch Towel Set,Bath,11.5,20.99
+P0188,Oak Soap Dish,Bath,46.95,81.99
+P0189,Linen Bath Mat,Bath,23.61,42.99
+P0190,Willow Towel Set,Bath,34.9,56.99
+P0191,Coastal Soap Dish,Bath,9.49,21.99
+P0192,Slate Soap Dish,Bath,11.92,27.99
+P0193,Alder Soap Dish,Bath,19.54,36.99
+P0194,Meadow Shelf,Storage,18.4,29.99
+P0195,Slate Basket,Storage,34.71,72.99
+P0196,Juniper Storage Box,Storage,48.32,78.99
+P0197,Ember Basket,Storage,18.3,41.99
+P0198,Birch Storage Box,Storage,16.49,34.99
+P0199,Slate Shelf,Storage,15.14,24.99
+P0200,Oak Storage Box,Storage,16.83,43.99
+P0201,Coastal Storage Box,Storage,17.2,34.99
+P0202,Linen Shelf,Storage,30.81,80.99
+P0203,Willow Storage Box,Storage,44.1,82.99
+P0204,Coastal Basket,Storage,18.34,47.99
+P0205,Coastal Shelf,Storage,13.01,28.99
+P0206,Ember Storage Box,Storage,14.42,25.99
+P0207,Ember Shelf,Storage,8.89,19.99
+P0208,Willow Basket,Storage,15.56,33.99
+P0209,Harbor Basket,Storage,6.8,12.99
+P0210,Ember Lounger,Outdoor,60.65,137.99
+P0211,Nordic Parasol,Outdoor,41.5,73.99
+P0212,Juniper Parasol,Outdoor,48.23,77.99
+P0213,Coastal Lounger,Outdoor,48.85,96.99
+P0214,Willow Parasol,Outdoor,45.38,96.99
+P0215,Birch Planter,Outdoor,46.34,94.99
+P0216,Nordic Lounger,Outdoor,28.13,53.99
+P0217,Birch Parasol,Outdoor,53.93,112.99
+P0218,Oak Parasol,Outdoor,45.31,111.99
+P0219,Harbor Parasol,Outdoor,100.77,212.99
+P0220,Birch Lounger,Outdoor,103.46,184.99
+P0221,Willow Planter,Outdoor,79.33,168.99
+P0222,Linen Parasol,Outdoor,107.72,265.99
+P0223,Juniper Lounger,Outdoor,20.31,34.99
+P0224,Slate Plate Set,Tableware,11.99,24.99
+P0225,Oak Serving Bowl,Tableware,5.04,9.99
+P0226,Alder Plate Set,Tableware,13.96,28.99
+P0227,Birch Serving Bowl,Tableware,13.54,27.99
+P0228,Juniper Mug,Tableware,9.6,17.99
+P0229,Harbor Serving Bowl,Tableware,17.32,31.99
+P0230,Nordic Mug,Tableware,6.89,16.99
+P0231,Meadow Plate Set,Tableware,10.01,22.99
+P0232,Linen Plate Set,Tableware,7.59,12.99
+P0233,Birch Plate Set,Tableware,16.15,29.99
+P0234,Juniper Plate Set,Tableware,5.11,11.99
+P0235,Meadow Cushion,Textiles,26.29,52.99
+P0236,Oak Tablecloth,Textiles,13.89,25.99
+P0237,Coastal Cushion,Textiles,18.87,44.99
+P0238,Nordic Curtain,Textiles,26.69,48.99
+P0239,Meadow Tablecloth,Textiles,29.15,52.99
+P0240,Willow Curtain,Textiles,14.77,28.99
+P0241,Birch Curtain,Textiles,15.15,38.99
+P0242,Alder Cushion,Textiles,12.63,23.99
+P0243,Slate Curtain,Textiles,13.71,28.99
+P0244,Juniper Curtain,Textiles,19.02,40.99
+P0245,Harbor Wall Clock,Wall art,9.84,23.99
+P0246,Oak Wall Clock,Wall art,62.02,101.99
+P0247,Nordic Wall Clock,Wall art,10.72,20.99
+P0248,Meadow Canvas,Wall art,46.56,82.99
+P0249,Coastal Print,Wall art,41.2,75.99
+P0250,Willow Canvas,Wall art,52.91,102.99
+P0251,Coastal Canvas,Wall art,31.98,53.99
+P0252,Alder Wall Clock,Wall art,42.67,95.99
+P0253,Juniper Wall Clock,Wall art,50.64,81.99
+P0254,Coastal Desk Chair,Office,36.49,62.99
+P0255,Harbor Organizer,Office,65.19,145.99
+P0256,Linen Organizer,Office,68.77,168.99
+P0257,Oak Monitor Stand,Office,61.45,120.99
+P0258,Meadow Desk Chair,Office,30.94,67.99
+P0259,Nordic Organizer,Office,28.63,70.99
+P0260,Willow Monitor Stand,Office,49.56,112.99
+P0261,Slate Desk Chair,Office,29.19,51.99
+P0262,Harbor Desk Chair,Office,112.85,198.99
+P0263,Oak Tealight Set,Candles,4.4,7.99
+P0264,Juniper Candle Jar,Candles,7.45,16.99
+P0265,Nordic Pillar Candle,Candles,10.45,22.99
+P0266,Slate Pillar Candle,Candles,5.0,8.99
+P0267,Birch Tealight Set,Candles,6.62,15.99
+P0268,Harbor Pillar Candle,Candles,6.27,11.99
+P0269,Juniper Tealight Set,Candles,12.47,22.99
+P0270,Slate Candle Jar,Candles,18.14,34.99
+P0271,Ember Tealight Set,Candles,12.04,20.99
+P0272,Coastal Olive Tree,Plants,16.94,28.99
+P0273,Meadow Succulent Set,Plants,12.12,27.99
+P0274,Birch Succulent Set,Plants,19.55,34.99
+P0275,Linen Succulent Set,Plants,10.34,18.99
+P0276,Coastal Succulent Set,Plants,22.54,43.99
+P0277,Juniper Fern,Plants,25.48,47.99
+P0278,Meadow Olive Tree,Plants,13.52,26.99
+P0279,Linen Fern,Plants,13.06,25.99
+P0280,Ember Night Light,Kids,22.99,49.99
+P0281,Harbor Night Light,Kids,24.65,47.99
+P0282,Alder Play Mat,Kids,6.22,13.99
+P0283,Nordic Play Mat,Kids,13.17,24.99
+P0284,Alder Toy Chest,Kids,9.8,18.99
+P0285,Harbor Toy Chest,Kids,24.61,47.99
+P0286,Linen Play Mat,Kids,8.78,20.99
+P0287,Meadow Night Light,Kids,17.53,32.99
+P0288,Juniper Pet Bed,Pet,8.16,18.99
+P0289,Ember Pet Bed,Pet,15.82,38.99
+P0290,Linen Scratching Post,Pet,29.99,56.99
+P0291,Nordic Pet Bed,Pet,13.26,32.99
+P0292,Harbor Scratching Post,Pet,12.38,21.99
+P0293,Juniper Feeding Bowl,Pet,16.1,33.99
+P0294,Slate Scratching Post,Pet,17.95,31.99
+P0295,Meadow Keepsake,Gifts,5.92,12.99
+P0296,Meadow Gift Card Holder,Gifts,12.72,32.99
+P0297,Harbor Gift Box,Gifts,25.52,54.99
+P0298,Alder Gift Box,Gifts,14.98,26.99
+P0299,Oak Gift Card Holder,Gifts,11.12,20.99
+P0300,Slate Keepsake,Gifts,17.9,37.99

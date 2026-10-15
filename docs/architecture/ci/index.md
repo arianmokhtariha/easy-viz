@@ -20,6 +20,11 @@ One GitHub Actions workflow, `CI`, with two jobs, `checks` and `lowest`.
   downloaded packages between runs. `uv sync --all-extras` then installs the exact
   versions in `uv.lock`: the library, its optional extras and the default `dev` group.
 - **Checks:** one step per command, so the log shows which check failed.
+- **Gallery:** a last step executes every gallery notebook (`pytest --nbmake
+  gallery/`), so a notebook that no longer runs with the code fails the build. It
+  only checks; committed outputs come from the gallery build script. The step is
+  skipped on Python 3.15, because the notebooks need DuckDB, which has no 3.15 wheel
+  yet ([decision 0009](../../decisions/0009-gallery-sql-duckdb.md)).
 - **Safety:**
   - the workflow's token is read-only (`contents: read`)
   - actions are pinned to commit SHAs, with the release tag in a comment
@@ -72,5 +77,7 @@ in `pyproject.toml` make: that easy-viz works with those versions.
   and the bound check fails instead, naming the dependency. This is how the numpy and
   scipy bounds were found too low (their first Python 3.13 wheels are 2.1 and
   1.14.1).
+- **The gallery step's 3.15 skip is temporary.** When DuckDB ships a 3.15 wheel,
+  remove the step's `if:` together with the dependency marker (decision 0009).
 - **The `docs` dependency group is not installed.** A future docs-build step must add
   `--group docs` to the install step.
