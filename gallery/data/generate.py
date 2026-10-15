@@ -550,10 +550,18 @@ def finish_customers(
             items_per_order=pl.col("quantity").mean().round(2),
         )
     )
-    frame = customers.frame.join(last_12m, on="customer_id", how="left").with_columns(
-        pl.col("orders_12m").fill_null(0).cast(pl.Int64),
-        pl.col("spend_12m").fill_null(0.0),
-        pl.col("items_per_order").fill_null(0.0),
+    # A join does not promise to keep row order, but the service arrays below are
+    # matched to customers by position: restore the original order explicitly.
+    frame = (
+        customers.frame.with_row_index("row")
+        .join(last_12m, on="customer_id", how="left")
+        .sort("row")
+        .drop("row")
+        .with_columns(
+            pl.col("orders_12m").fill_null(0).cast(pl.Int64),
+            pl.col("spend_12m").fill_null(0.0),
+            pl.col("items_per_order").fill_null(0.0),
+        )
     )
     n_orders = frame["orders_12m"].to_numpy()
     counts: dict[str, IntArray] = {}

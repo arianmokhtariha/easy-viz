@@ -4,8 +4,9 @@
 - **Mirrors `src/easy_viz/`:** tests for `stats/regression.py` live in
   `tests/stats/test_regression.py`.
 - **Developer scripts are tested in `tests/scripts/`**, loaded with `load_script()`
-  from `conftest.py`. Test their pure functions; keep kernels, Chrome and file
-  writes out of the tests.
+  from `conftest.py`. Test their pure functions and small file helpers; no kernels
+  or Chrome, and no file writes outside pytest's `tmp_path` (never into the
+  repository).
 - **Repository-wide checks** live at the top level:
   - `test_contract.py`
   - `test_layering.py`
@@ -45,7 +46,7 @@
 - `test_styling_literals.py`: no styling literals in `src/easy_viz/plots/`.
 - `test_gallery.py`:
   - every public plot function has a notebook and a row in `gallery/README.md`
-  - every keyword parameter appears in its notebook
+  - every keyword parameter is passed to the function in its notebook
   - every notebook is linked from the index and committed executed, with a PNG
     next to every interactive figure
   - README images match their `readme:` tags, and links to them resolve

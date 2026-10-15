@@ -25,7 +25,10 @@ Where easy-viz stands. Updated in the PR that changes it.
   template and a "Meet the data" notebook, with every chart starting from a SQL query
   (DuckDB); a build script that executes the notebooks, stores every figure as a
   static image and as an interactive figure, and exports README images; checks that
-  every plot function, parameter and README image stays covered
+  every plot function, parameter and README image stays covered. With the product
+  manager's approval (2026-10-15), proving the template on a real plot function
+  moved to plan 0003, and rendering the notebooks on a docs site stays with the
+  "Docs site" item; the notebook outputs are already docs-ready
 - Foundation (plan 0001): table intake for pandas, polars and pyarrow with SQL type
   normalisation, option validation, layout helpers, the `dark` and `light` themes,
   trace roles, global config and static export, plus repository-wide checks for

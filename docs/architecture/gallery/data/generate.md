@@ -93,8 +93,10 @@ sizes, noise levels), next to a comment saying which pattern it controls.
 - **Black Friday dates are computed** (the day after the fourth Thursday of
   November), so changing `START` or `END` keeps the spike on the right day.
 - **The pattern strengths are tuned for this seed.** Another seed keeps every
-  mechanism, but sampling noise moves the measured values by a few hundredths. The
-  documented values would need re-measuring.
+  mechanism (every sign holds), but sampling noise moves some measured strengths by
+  a few tenths: on seeds 1-5 the lowest within-region r fell to 0.26 and the Black
+  Friday ratio rose to 3.02. Re-measure every documented value, and check each
+  pattern is still clearly visible, before committing a new seed.
 - **The density used to count delivery-time peaks** uses a fixed bandwidth of 0.3
   days in the test. Delivery times are rounded to 0.1 days, and an automatic
   bandwidth narrower than that finds spurious peaks.

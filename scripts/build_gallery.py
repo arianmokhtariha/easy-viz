@@ -10,12 +10,13 @@ Steps, in order:
    to ``plotly_mimetype``, so every figure output carries the figure as JSON: the
    interactive form, for the docs site.
 5. Render every figure to PNG in one batch (one Chrome session) and embed each PNG
-   next to its JSON, so the notebook shows a static image on GitHub. Each PNG is
-   also saved to ``.review/<notebook>/<cell>.png`` for the visual review loop.
-6. Export the figure of every cell tagged ``readme:<name>`` to
+   next to its JSON, so the notebook shows a static image on GitHub.
+6. Write the executed notebooks back, before the side outputs below.
+7. Save each PNG to ``.review/<notebook>/<cell>.png`` for the visual review loop.
+8. Export the figure of every cell tagged ``readme:<name>`` to
    ``docs/images/readme/<name>.png`` at the configured export scale. A full run
-   removes README images that no tag produces any more.
-7. Write the executed notebooks back.
+   removes README images that no tag produces any more. Old images that can't be
+   deleted (open in another program) are listed instead of failing the run.
 
 A notebook whose execution fails is reported and not written; the others still are,
 and the script exits with an error. A misused ``readme:`` tag (invalid or repeated
@@ -34,7 +35,6 @@ import base64
 import importlib.util
 import os
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -363,12 +363,27 @@ def write_notebook(nb: NotebookNode, path: Path) -> None:
     path.write_text(text if text.endswith("\n") else text + "\n", "utf-8", newline="\n")
 
 
+def remove_files(paths: Iterable[Path]) -> list[Path]:
+    """Delete ``paths`` one by one; return those that could not be deleted.
+
+    On Windows a file open in another program (an image viewer showing a review
+    PNG) cannot be deleted. That must not fail a build whose notebooks are done, so
+    the caller reports the leftovers instead.
+    """
+    kept: list[Path] = []
+    for path in paths:
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            kept.append(path)
+    return kept
+
+
 def render_figures(executed: Mapping[PurePosixPath, NotebookNode]) -> int:
-    """Embed a PNG in every figure output and save it to ``.review/``.
+    """Embed a PNG in every figure output, next to its Plotly JSON.
 
     All figures render in one ``save_many`` batch at scale 1, so Chrome starts
-    once. Each notebook's review folder is emptied first, so it never shows a
-    figure the notebook no longer makes.
+    once.
 
     Returns
     -------
@@ -385,20 +400,36 @@ def render_figures(executed: Mapping[PurePosixPath, NotebookNode]) -> int:
             )
             for figure, path in zip(figures, paths, strict=True):
                 embed_png(figure.output, path.read_bytes())
-    for notebook in executed:
+    return len(figures)
+
+
+def save_review_images(executed: Mapping[PurePosixPath, NotebookNode]) -> list[Path]:
+    """Save every embedded PNG to ``.review/<notebook>/<cell>.png``.
+
+    Each notebook's old review images are deleted first, so the folder never shows
+    a figure the notebook no longer makes.
+
+    Returns
+    -------
+    list of Path
+        Old images that could not be deleted (open in another program).
+    """
+    kept: list[Path] = []
+    for notebook, nb in executed.items():
         review = REVIEW / notebook.stem
-        shutil.rmtree(review, ignore_errors=True)
-        review.mkdir(parents=True)
-        for figure in (f for f in figures if f.notebook == notebook):
+        if review.is_dir():
+            kept += remove_files(p for p in review.iterdir() if p.is_file())
+        review.mkdir(parents=True, exist_ok=True)
+        for figure in figure_outputs(notebook, nb):
             png = base64.b64decode(figure.output.data[PNG_MIME])
             (review / f"{figure.name}.png").write_bytes(png)
-    return len(figures)
+    return kept
 
 
 def write_readme_images(
     exports: Mapping[str, FigureOutput], *, remove_stale: bool
-) -> list[Path]:
-    """Export the README images at the configured scale; return the ones removed.
+) -> tuple[list[Path], list[Path]]:
+    """Export the README images at the configured scale, and remove stale ones.
 
     Parameters
     ----------
@@ -407,17 +438,23 @@ def write_readme_images(
     remove_stale : bool
         Delete README images that no tag produced. Only safe when every notebook
         was read: a full run without failures.
+
+    Returns
+    -------
+    removed : list of Path
+        The stale images deleted.
+    kept : list of Path
+        The stale images that could not be deleted (open in another program).
     """
     if exports:
         save_many(
             {name: to_figure(f.output) for name, f in exports.items()}, README_IMAGES
         )
     if not remove_stale or not README_IMAGES.is_dir():
-        return []
-    removed = stale_readme_images(README_IMAGES.iterdir(), exports.keys())
-    for image in removed:
-        image.unlink()
-    return removed
+        return [], []
+    stale = stale_readme_images(README_IMAGES.iterdir(), exports.keys())
+    kept = remove_files(stale)
+    return [p for p in stale if p not in kept], kept
 
 
 def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
@@ -466,18 +503,28 @@ def main(argv: Sequence[str] | None = None) -> None:
         )
 
     rendered = render_figures(executed)
-    # A failed notebook's tags were never read: its images are not stale.
-    removed = write_readme_images(exports, remove_stale=full_run and not failures)
-
+    # The notebooks are the build's product: write them before the side outputs,
+    # so a problem with .review/ or the README images can't lose them.
     for path, nb in executed.items():
         drop_volatile_metadata(nb)
         write_notebook(nb, REPO / path)
+    kept = save_review_images(executed)
+    # A failed notebook's tags were never read: its images are not stale.
+    removed, kept_stale = write_readme_images(
+        exports, remove_stale=full_run and not failures
+    )
 
     print(
         f"Notebooks executed: {len(executed)} of {len(selected)}. "
         f"Figures rendered: {rendered} (see {REVIEW.relative_to(REPO)}/). "
         f"README images written: {len(exports)}, removed: {len(removed)}."
     )
+    if kept or kept_stale:
+        print(
+            "Could not delete these old images (open in another program?); close "
+            "them and re-run to remove them:\n"
+            + "\n".join(f"    {p.relative_to(REPO)}" for p in kept + kept_stale)
+        )
     if failures:
         raise SystemExit("Failed (not written):\n" + "\n\n".join(failures))
 

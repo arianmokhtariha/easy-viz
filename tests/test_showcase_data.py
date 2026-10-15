@@ -516,6 +516,31 @@ def test_customer_aggregates_equal_their_2025_orders(tables: Tables) -> None:
     assert (joined["late_deliveries_12m"] <= cap).all()
 
 
+def test_every_customer_ordered_in_each_year_since_signing_up(tables: Tables) -> None:
+    # INSIGHTS.md describes customers as the active base: everyone ordered in 2025
+    # and in every earlier year of the data they were signed up for.
+    years = {2024, 2025}
+    ordered = set(
+        tables["orders"]
+        .select("customer_id", year=pl.col("order_date").dt.year())
+        .unique()
+        .iter_rows()
+    )
+    missing = [
+        (customer, year)
+        for customer, signup in tables["customers"]
+        .select("customer_id", pl.col("signup_date").dt.year())
+        .iter_rows()
+        for year in years
+        if year >= signup and (customer, year) not in ordered
+    ]
+    assert not missing, (
+        f"{len(missing)} customer-years without an order, e.g. {missing[:3]}, but "
+        f"INSIGHTS.md promises an active customer base. Fix the generator; "
+        f"{REGENERATE}."
+    )
+
+
 def test_daily_metrics_equal_the_daily_order_totals(tables: Tables) -> None:
     daily = tables["daily_metrics"].sort("date")
     steps = daily["date"].diff().drop_nulls().dt.total_days()

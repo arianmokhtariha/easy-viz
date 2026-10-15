@@ -272,7 +272,8 @@ dollars, so `unit_price` is 100 times too high. The billing system computed `rev
 from the right price, so revenue is correct on every row.
 
 **Strength:** 84 of the 29,812 orders (0.28 %). On those rows `unit_price` is
-exactly 100 times `revenue` / (`quantity` x (1 - `discount`)).
+100 times `revenue` / (`quantity` x (1 - `discount`)), up to the rounding of revenue
+to cents.
 
 **How to reveal it:** `box_plot` of `unit_price` by category on a linear axis is
 squashed flat by a few points in the thousands of dollars (up to about $40,000). With a log y axis, the typos form a

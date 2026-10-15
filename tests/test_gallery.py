@@ -11,8 +11,10 @@ Rules
 * Every public plot function (a callable in ``easy_viz.__all__`` defined under
   ``easy_viz.plots``) has ``gallery/<family>/<function>.ipynb``, where the family is
   the last part of its module, and ``gallery/README.md`` links to it.
-* Every keyword-only parameter of the function appears as ``name=`` in a code cell
-  of its notebook. Prose does not count: the option must be shown working.
+* Every keyword-only parameter of the function is passed to that function
+  (``ev.bar_plot(..., top_n=5)``) in a code cell of its notebook. Prose, plain
+  assignments and other calls (``fig.update_layout(title=...)``) do not count: the
+  option must be shown working.
 * Every gallery notebook is linked from ``gallery/README.md``.
 * Every gallery notebook is committed executed: each non-empty code cell has an
   execution count, no output is an error, and every Plotly figure output also
@@ -28,6 +30,7 @@ none exists; the others pass while the gallery is empty and enforce as soon as f
 appear.
 """
 
+import ast
 import inspect
 import re
 from collections.abc import Callable, Mapping
@@ -82,8 +85,31 @@ def index_links(root: Path) -> set[PurePosixPath]:
     return {t for t in targets if t is not None}
 
 
-def code_sources(nb: NotebookNode) -> str:
-    return "\n".join(c.source for c in nb.cells if c.cell_type == "code")
+def keywords_passed_to(nb: NotebookNode, function: str) -> set[str]:
+    """Keyword names given to calls of ``function``: ``ev.f(...)`` or ``f(...)``."""
+    used: set[str] = set()
+    for cell in nb.cells:
+        if cell.cell_type != "code":
+            continue
+        # IPython magics and shell escapes are not Python syntax.
+        source = "\n".join(
+            line
+            for line in cell.source.splitlines()
+            if not line.lstrip().startswith(("%", "!"))
+        )
+        for node in ast.walk(ast.parse(source)):
+            if not isinstance(node, ast.Call):
+                continue
+            callee = node.func
+            if isinstance(callee, ast.Attribute):
+                called = callee.attr
+            elif isinstance(callee, ast.Name):
+                called = callee.id
+            else:
+                continue
+            if called == function:
+                used.update(k.arg for k in node.keywords if k.arg is not None)
+    return used
 
 
 # --- Rules -----------------------------------------------------------------------
@@ -110,24 +136,24 @@ def check_function_notebooks(root: Path, functions: PlotFunctions) -> list[str]:
 
 
 def check_keyword_parameters(root: Path, functions: PlotFunctions) -> list[str]:
-    """Rule: every keyword-only parameter is used as ``name=`` in a code cell."""
+    """Rule: every keyword-only parameter is passed to the function in a code cell."""
     problems = []
     for name, function in sorted(functions.items()):
         notebook = notebook_for(name, function)
         if not (root / notebook).is_file():
             continue  # reported by check_function_notebooks
-        code = code_sources(read_notebook(root, notebook))
+        used = keywords_passed_to(read_notebook(root, notebook), name)
         missing = [
             p.name
             for p in inspect.signature(function).parameters.values()
-            if p.kind is inspect.Parameter.KEYWORD_ONLY
-            and not re.search(rf"\b{re.escape(p.name)}\s*=(?!=)", code)
+            if p.kind is inspect.Parameter.KEYWORD_ONLY and p.name not in used
         ]
         if missing:
             problems.append(
-                f"{notebook}: never uses the keyword parameter(s) {missing} of "
-                f"{name}. Show each one as name=... in a code cell of the "
-                f"Parameter tour (mentions in markdown do not count)."
+                f"{notebook}: never passes the keyword parameter(s) {missing} to "
+                f"{name}. Show each one in a call such as ev.{name}(..., "
+                f"{missing[0]}=...) in the Parameter tour (markdown, assignments "
+                f"and other calls do not count)."
             )
     return problems
 
@@ -327,11 +353,16 @@ def test_function_rule_needs_the_notebook_in_its_family_and_a_link(
     assert check_function_notebooks(root, FAKE) == []
 
 
-def test_keyword_rule_counts_only_assignments_in_code_cells(tmp_path: Path) -> None:
+def test_keyword_rule_counts_only_keywords_passed_to_the_function(
+    tmp_path: Path,
+) -> None:
     cells = [
         new_markdown_cell("Use `top_n=5` to keep the largest categories."),
-        code('ev.bar_plot(df, "region", color="segment")'),
+        code('%matplotlib inline\nev.bar_plot(df, "region", color="segment")'),
         code("assert top_n == 3"),  # a comparison is not an option being used
+        code("top_n = 5"),  # nor a plain assignment
+        # nor a keyword of the same name given to another call (Plotly's title)
+        code('fig.update_layout(title="Revenue")\nfig.update_traces(top_n=1)'),
     ]
     root = build_tree(tmp_path, {str(BAR): cells})
     problems = check_keyword_parameters(root, FAKE)

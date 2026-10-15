@@ -35,21 +35,24 @@ Steps, in order:
 5. **Render:** every figure of every executed notebook goes through one
    `easy_viz.save_many` batch at scale 1 (Chrome starts once). Each PNG is embedded
    as `image/png` in the same output, next to the JSON: GitHub shows the PNG, Jupyter
-   and a docs site the interactive figure. Each is also saved as
+   and a docs site the interactive figure.
+6. **Write:** each executed notebook is written back as nbformat v4 with LF line
+   endings, without timing metadata or the kernel's exact Python version. Notebooks
+   are the build's product, so they are written before the side outputs below.
+7. **Review images:** each embedded PNG is saved as
    `.review/<notebook>/cell-NN.png` (`cell-NN-K` for several figures in one cell; NN
-   is the cell's index, markdown cells included). A notebook's review folder is
-   emptied first.
-6. **README images:** a second `save_many` batch writes the tagged figures to
+   is the cell's index, markdown cells included), after deleting that notebook's old
+   review images.
+8. **README images:** a second `save_many` batch writes the tagged figures to
    `docs/images/readme/<name>.png` at the configured export scale. A full run (no
    `--only`, no failed notebook) deletes PNGs there that no tag produced.
-7. **Write:** each executed notebook is written back as nbformat v4 with LF line
-   endings, without timing metadata or the kernel's exact Python version.
 
 A notebook whose cell fails (or times out, or kills the kernel) is reported and not
 written; the others still are, and the script exits with an error.
 
 The logic sits in pure functions (`select_notebooks`, `figure_outputs`,
-`readme_exports`, `embed_png`, `stale_readme_images`, `drop_volatile_metadata`)
+`readme_exports`, `embed_png`, `stale_readme_images`, `drop_volatile_metadata`,
+`remove_files`)
 tested without a kernel or Chrome in `tests/scripts/test_build_gallery.py`; `main`
 does the I/O. `tests/test_gallery.py` reuses the tag parsing and notebook discovery,
 so the build and the checks can't disagree on what a gallery notebook or a tag is.
@@ -71,3 +74,6 @@ so the build and the checks can't disagree on what a gallery notebook or a tag i
   embedded PNG, so they get the export scale (2× by default) while notebooks stay
   small.
 - **`.review/` is gitignored** and only reflects the last build of each notebook.
+- **On Windows, an image open in another program can't be deleted.** Old review or
+  README images that can't be removed are listed at the end of the run instead of
+  failing it; close them and re-run.

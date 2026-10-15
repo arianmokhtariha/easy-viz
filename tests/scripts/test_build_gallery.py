@@ -123,6 +123,33 @@ def test_stale_readme_images_are_pngs_no_tag_produced(tmp_path: Path) -> None:
     assert build.stale_readme_images(files, {"hero"}) == [tmp_path / "old.png"]
 
 
+def test_a_review_image_that_cannot_be_deleted_does_not_fail_the_build(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # On Windows, a PNG open in an image viewer cannot be deleted. The build used
+    # to crash at this point, after executing every notebook, writing none.
+    monkeypatch.setattr(build, "REVIEW", tmp_path)
+    review = tmp_path / NB.stem
+    review.mkdir()
+    locked, old = review / "cell-07.png", review / "cell-09.png"
+    locked.write_bytes(b"old")
+    old.write_bytes(b"old")
+    real_unlink = Path.unlink
+
+    def unlink(path: Path, missing_ok: bool = False) -> None:
+        if path == locked:
+            raise PermissionError("in use by another process")
+        real_unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", unlink)
+    output = figure()
+    build.embed_png(output, b"new")
+    kept = build.save_review_images({NB: notebook(cell(output))})
+    assert kept == [locked]
+    assert not old.exists()
+    assert (review / "cell-00.png").read_bytes() == b"new"
+
+
 def test_only_selects_by_stem_and_rejects_unknown_or_ambiguous_names() -> None:
     assert build.select_notebooks([NB, OTHER], ["line_plot"]) == [OTHER]
     assert build.select_notebooks([NB, OTHER], []) == [NB, OTHER]
