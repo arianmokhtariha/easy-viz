@@ -13,6 +13,8 @@ suffixes (d3's `s` has no Python equivalent), so no single spec reads well for b
 `862,289` and `0.42`.
 
 ## Decision
+Proposed during the visual review of `bar_plot`; approved by the product manager on
+2026-10-15, as the default for every plot.
 - **`value_format=None` is the default** and means automatic: three significant
   digits, with k, M, B or T for thousands, millions, billions and trillions
   (`862k`, `1.08M`, `-2.5k`, `0.42`). Implemented once, in
