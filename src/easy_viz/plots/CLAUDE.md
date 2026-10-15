@@ -7,6 +7,12 @@ follows them.
 ## Rules
 - **No styling literals:** no hex colours, font names or pixel sizes. They come from
   the theme or `config`. *(enforced by a test that scans this directory)*
+- **One function per chart concept** (product principle 8). Before adding or
+  porting a function, check the existing functions and the rest of
+  `legacy/custom_plots.py` for any that draw the same kind of chart. Where one
+  function can do both jobs with nothing lost, propose merging them, with the
+  options that carry the difference. A merged-away function is not ported
+  separately.
 - **One module per family:** `distribution`, `relationship`, `comparison`,
   `timeseries`, `business`, `ml`. A function that fits none of them is a reason to
   propose a new family, not to stretch an existing one.
@@ -33,11 +39,21 @@ it couldn't produce are in `legacy/conclusions.ipynb`.
   documentation.
 - Keep its statistical behaviour exactly: CI methods, seriation, edge-case handling.
   Any intended difference is listed under *Product impact* in the report.
+- **Porting is also redesign, one function at a time.** Judge the original against
+  `docs/product.md` while porting it. List the improvements and missing features
+  found, each with a recommendation, in the plan or under *Decisions needed*,
+  including which overlapping legacy functions it should absorb. The
+  product manager approves which ones the port builds (they shape the public API).
+  The rest go to `ROADMAP.md`, so nothing found is lost.
 
 ## Adding or porting a plot (definition of done for this directory)
 1. Move or write its computation in `stats/`, with tests.
 2. Write the function to the contract and glossary.
 3. Export it in `easy_viz.__all__` and register it in the contract-test registry.
 4. Add or update its gallery notebook and index row (see `gallery/CLAUDE.md`).
+   Every scenario its options serve needs a story in the showcase data. Where no
+   pattern in `gallery/data/INSIGHTS.md` shows one, add the pattern to the generator
+   with its `INSIGHTS.md` section and summary rows in the same PR. The existing
+   patterns must still measure at their documented values.
 5. Run the visual review loop (root guide) on its notebook.
 6. Run the knowledge sync loop (root guide).

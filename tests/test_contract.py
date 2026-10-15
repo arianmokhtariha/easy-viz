@@ -25,7 +25,7 @@ import narwhals as nw
 import pandas as pd
 import plotly.graph_objects as go
 import pytest
-from conftest import MakeFrame
+from conftest import MakeFrame, public_plot_functions
 
 import easy_viz
 from easy_viz._layout import apply_base_layout
@@ -150,17 +150,6 @@ def test_theme_is_applied(case: ContractCase, make_frame: MakeFrame) -> None:
 
 def test_title_is_used(case: ContractCase, make_frame: MakeFrame) -> None:
     assert_title_used(case, make_frame(case.data))
-
-
-def public_plot_functions() -> dict[str, Callable[..., go.Figure]]:
-    """Callables in ``easy_viz.__all__`` that are defined under ``easy_viz.plots``."""
-    functions = {}
-    for name in easy_viz.__all__:
-        obj = getattr(easy_viz, name)
-        module = getattr(obj, "__module__", "") or ""
-        if callable(obj) and (module + ".").startswith("easy_viz.plots."):
-            functions[name] = obj
-    return functions
 
 
 def test_every_public_plot_function_is_registered() -> None:

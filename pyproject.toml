@@ -11,7 +11,8 @@ authors = [{ name = "Arian Mokhtariha" }]
 # environments without forcing them to up- or downgrade anything.
 dependencies = [
     "plotly>=7.1",     # rendering core
-    "narwhals>=2.0",   # accepts pandas / polars / pyarrow / ... without depending on them
+    "narwhals>=2.8",   # accepts pandas / polars / pyarrow / ... without depending on them;
+                       # 2.8 is the first that reads DuckDB 1.5 query results
     "numpy>=2.1",      # numeric work; 2.1 is the first with Python 3.13 wheels
     "scipy>=1.14.1",   # statistics (KDE, regression, clustering, distributions);
                        # 1.14.1 is the first with Python 3.13 wheels
@@ -35,6 +36,10 @@ dev = [
     "ipykernel",           # use the project's .venv as a notebook kernel
     "nbformat>=4.2",       # Plotly needs it to display figures in notebooks
     "nbmake",              # runs the gallery notebooks as tests
+    "nbclient>=0.10",      # executes the gallery notebooks (scripts/build_gallery.py)
+    # The gallery notebooks query the showcase data with SQL. DuckDB has no Python
+    # 3.15 wheel yet, so the gallery builds and runs on 3.13/3.14 until it does.
+    "duckdb>=1.5 ; python_full_version < '3.15'",
 ]
 docs = [
     "sphinx",
@@ -69,6 +74,8 @@ ban-relative-imports = "all"   # absolute imports only
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
 "examples/**" = ["D"]
+# Its placeholder cells are comments, so `ev` stays unused until a notebook fills them.
+"gallery/_template.ipynb" = ["F401"]
 
 [tool.mypy]
 python_version = "3.13"   # the supported minimum: flags 3.14/3.15-only features

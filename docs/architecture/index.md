@@ -16,6 +16,7 @@ they depend on each other, and links to the doc that owns each one.
 | Themes | `src/easy_viz/theme/` | [easy_viz/theme/index.md](easy_viz/theme/index.md) |
 | Tests and repository-wide checks | `tests/` | [tests/index.md](tests/index.md) |
 | Developer scripts | `scripts/` | [scripts/index.md](scripts/index.md) |
+| Gallery and showcase data | `gallery/` | [gallery/index.md](gallery/index.md) |
 | Continuous integration | `.github/` | [ci/index.md](ci/index.md) |
 
 **Layers of the library.** The package currently holds the foundation; plot functions

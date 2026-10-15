@@ -61,6 +61,11 @@ Every feature is judged against these.
    tagged by role. Whatever the parameters don't cover is one Plotly call away.
 7. **Consistency is a feature.** Same slot names, option names, defaults logic and
    error style everywhere. Learning one function teaches all of them.
+8. **One function per chart concept.** Two functions that draw the same kind of
+   chart make users wonder which one to use and how they differ. When one function
+   can do both jobs without losing professionalism or functionality, it is one
+   function, and the difference becomes an option. A separate function exists only
+   for a genuinely different chart.
 
 ## Query-result shapes
 These are the shapes SQL queries return, and how each one plots. The exact parameter

@@ -1,6 +1,6 @@
 # Tests
 
-Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py, tests/test_packaging.py
+Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py, tests/test_packaging.py, tests/test_gallery.py, tests/test_showcase_data.py, tests/scripts/test_build_gallery.py
 
 ## Responsibilities
 Prove that the library is correct and that the repository stays consistent with
@@ -11,6 +11,11 @@ itself. There are two kinds of test:
   owns: the public-function contract, the layering between sub-packages, the absence of
   styling literals in the plot functions, the agreement between documentation and
   code, and the contents of the built package.
+
+Tests for a developer script live in `tests/scripts/`, mirroring `scripts/`. A script
+is not importable as a package, so `load_script()` in `conftest.py` loads it by path;
+the tests exercise its pure functions and small file helpers, writing only inside
+pytest's `tmp_path`; kernels and Chrome stay out of them.
 
 `conftest.py` holds the shared `make_frame` fixture. It builds the same small table as
 pandas, polars and pyarrow, and runs each test that uses it once per backend, which is
@@ -84,6 +89,41 @@ Turns the placement rules for the documentation into checks. On the real reposit
 - every plan has a valid `Status`;
 - the agent guides on disk and the table in the root guide agree, and the links and
   imports inside the guides resolve.
+
+### `test_gallery.py`
+Checks that the gallery matches the code ([gallery](../gallery/index.md)):
+- every public plot function (found with `public_plot_functions()` in `conftest.py`,
+  shared with the contract test) has `gallery/<family>/<name>.ipynb`, where family is
+  the last part of its module, and a link to it in `gallery/README.md`;
+- every keyword-only parameter is passed to the function itself in a code cell of
+  its notebook (found by parsing the code, so prose, plain assignments and Plotly
+  calls such as `fig.update_layout(title=...)` don't count);
+- every gallery notebook is linked from `gallery/README.md`;
+- every gallery notebook is committed executed: each code cell ran, none errored, and
+  every Plotly figure output also carries a PNG (without it GitHub shows nothing);
+- README images: every link into `docs/images/readme/` resolves, every `readme:<name>`
+  tag has its image, every image has its tag, and tag names are unique.
+
+It reuses the build script's notebook discovery and tag parsing (loaded with
+`load_script`) and the link helpers of `test_knowledge_base.py`, so the build and the
+checks can't disagree. While no plot function exists, the two per-function checks
+skip with that reason.
+
+### `test_showcase_data.py`
+Keeps the showcase dataset honest ([showcase data](../gallery/data/index.md)):
+- parses the summary table of `gallery/data/INSIGHTS.md` and measures every row's
+  metric on the committed CSV files; a documented value that no longer matches, a
+  documented metric without a measurement, or a measurement without a row fails;
+- checks that the tables agree: daily totals equal the orders, customer aggregates
+  equal their orders, keys resolve;
+- rebuilds the tables with the generator and compares them with the committed files
+  (floats within a small tolerance, because numpy's math can differ in the last bit
+  between CPUs), which proves the CSVs were never edited by hand.
+
+### `scripts/test_build_gallery.py`
+Tests the gallery build script's pure functions on synthetic notebooks: notebook
+selection, figure naming, `readme:` tag validation, PNG embedding and stale-image
+detection. No kernel or Chrome is needed.
 
 ### `test_packaging.py`
 Builds the source distribution and the wheel with `uv build` into a temporary
