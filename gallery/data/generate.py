@@ -167,7 +167,7 @@ STOREFRONT_WIDTH = 0.2
 STOREFRONT_CONVERSION = {"South": 0.09, "East": 0.055, "North": 0.03, "West": 0.015}
 # ... while inside a storefront pricier products convert better.
 LISTING_PRICE_EFFECT = 0.12
-LISTING_NOISE = 0.15
+LISTING_NOISE = 0.10
 LISTING_VIEWS_MEDIAN = 4_000.0
 LISTING_VIEWS_SIGMA = 0.5
 
@@ -626,7 +626,10 @@ def build_listings(products: _Products, rng: np.random.Generator) -> pl.DataFram
     products convert better, so the correlation is positive within every region.
     """
     price = products.frame["list_price"].to_numpy()
-    percentile = (np.argsort(np.argsort(price)) + 0.5) / price.size
+    # Stable sorts: equal prices must rank the same on every CPU (numpy's default
+    # sort picks a CPU-specific routine, which orders ties differently).
+    rank = np.argsort(np.argsort(price, kind="stable"), kind="stable")
+    percentile = (rank + 0.5) / price.size
     parts: list[pl.DataFrame] = []
     for region in REGIONS:
         centre = STOREFRONT_CENTRE[region]

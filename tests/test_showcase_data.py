@@ -280,7 +280,10 @@ def churn_auc(t: Tables) -> float:
 
 
 def top_decile(t: Tables) -> pl.DataFrame:
-    scores = t["churn_scores"].sort("churn_probability", descending=True)
+    # customer_id breaks ties: polars' sort does not keep the order of equal values.
+    scores = t["churn_scores"].sort(
+        "churn_probability", "customer_id", descending=[True, False]
+    )
     return scores.head(scores.height // 10)
 
 

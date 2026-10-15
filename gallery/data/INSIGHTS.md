@@ -26,7 +26,7 @@ pattern defines its metrics precisely.
 | ID | Pattern | Table | Metric | Documented value |
 |---|---|---|---|---|
 | `simpson-overall-r` | 1. Simpson's paradox | listings | Pearson r of price and conversion_rate, all rows | -0.42 |
-| `simpson-min-within-region-r` | 1. Simpson's paradox | listings | Lowest Pearson r of price and conversion_rate within one region | 0.47 |
+| `simpson-min-within-region-r` | 1. Simpson's paradox | listings | Lowest Pearson r of price and conversion_rate within one region | 0.58 |
 | `pareto-top20-profit-share` | 2. Profit concentration | orders | Share of total profit from the top 20 % of customers | 0.75 |
 | `delivery-modes-overall` | 3. Hidden bimodality | orders | Peaks in the density of delivery_days, all orders | 2 |
 | `delivery-modes-max-within-warehouse` | 3. Hidden bimodality | orders | Most peaks in the density of delivery_days within one warehouse | 1 |
@@ -99,7 +99,7 @@ the `orders` table.
 for Q4 2025. `product_id`, `region`, `price` (the product's `list_price`),
 `page_views`, `purchases` (made from that product page), `conversion_rate`
 (purchases / page views). Each storefront features only part of the catalogue: most
-products appear in one or two regions, and two products in none. Purchases come from the product page only,
+products appear in one or two regions, and six products in none. Purchases come from the product page only,
 so they are not a subset of `orders` you can reconcile.
 
 **`churn_scores`**: one row per Plus member, 1,465 rows. `customer_id`, `score_date`
@@ -125,14 +125,14 @@ rows. `checkout_id` (`K0001` ...), `variant` (A, B, C), `device` (Desktop, Mobil
 **Where:** `listings`, columns `price`, `conversion_rate` and `region`.
 
 **Mechanism:** each regional storefront features the products around its own price
-level. The South storefront is the value range (median price $29), then East ($44),
+level. The South storefront is the value range (median price $28), then East ($44),
 North ($78) and West, the premium range ($161). Pricier storefronts convert worse:
-mean conversion is 9.3 % in the South, 5.6 % in the East, 3.0 % in the North and
-1.5 % in the West. Inside each storefront it runs the other way: the pricier products
+mean conversion is 9.25 % in the South, 5.55 % in the East, 2.99 % in the North and
+1.47 % in the West. Inside each storefront it runs the other way: the pricier products
 convert *better*, because shoppers who reach them are the ones who came for them.
 
 **Strength:** over all 514 rows, price and conversion correlate at r = -0.42. Within
-every region the correlation is positive, between 0.47 (East) and 0.69 (South).
+every region the correlation is positive, between 0.58 (West) and 0.75 (South).
 
 **How to reveal it:** a plain scatter of `price` against `conversion_rate` with one
 trendline says "expensive products convert worse", and that conclusion is wrong.

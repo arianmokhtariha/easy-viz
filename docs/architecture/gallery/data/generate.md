@@ -82,6 +82,11 @@ sizes, noise levels), next to a comment saying which pattern it controls.
   small buyers into 2025 than 2024, which shifts the average order value and hides
   the price-rise step. `_anchor_slots` reassigns existing slots, so daily totals are
   unchanged.
+- **Every sort that can meet ties is stable** (`kind="stable"` in numpy, a
+  tie-breaking key in polars). numpy's default sort picks a CPU-specific routine
+  that orders equal values differently, so list prices (many end in .99) ranked
+  differently on the Linux CI runner and changed which products each storefront
+  features.
 - **The service counts are rounded log-normals, not Poisson.** Poisson noise on
   counts with a mean near 1 drowns the shared factor (within-block |r| fell to
   about 0.3).
