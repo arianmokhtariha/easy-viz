@@ -140,7 +140,7 @@ every region the correlation is positive, between 0.58 (West) and 0.75 (South).
 
 **How to reveal it:** a plain scatter of `price` against `conversion_rate` with one
 trendline says "expensive products convert worse", and that conclusion is wrong.
-`scatter_plot` with `color="region"` and a trendline per group shows four upward
+Split by region (`color="region"`) with a trendline per group, it shows four upward
 lines, each sitting lower as the region gets pricier. A log x axis spreads out the
 cheap regions.
 
@@ -155,7 +155,7 @@ of order frequency), and big spenders also buy more items per order (up to 6).
 of all profit. Six customers lose Fernway money overall: small Plus members whose
 free shipping costs more than their margin.
 
-**How to reveal it:** `pareto_plot` of profit per customer, with a cutoff at 80 % of
+**How to reveal it:** a Pareto chart of profit per customer, with a cutoff at 80 % of
 profit, shows how few customers it takes. A plain bar chart of 4,000 customers shows
 nothing.
 
@@ -208,8 +208,8 @@ single-peaked shapes, which explains the humps.
 Comparing the same months of both years removes the seasonality, which is why the
 metrics use these windows.
 
-**How to reveal it:** the raw daily `orders` line is a noisy zigzag. `time_series_plot`
-with a 7-day rolling average removes the weekly cycle and shows the yearly wave and
+**How to reveal it:** the raw daily `orders` line is a noisy zigzag. A 7-day rolling
+average removes the weekly cycle and shows the yearly wave and
 the Black Friday spikes; a 28-day rolling average with a reference line at
 2025-04-01 shows the step down in orders, the step down in `conversion_rate` and the
 step up in `avg_order_value`.
@@ -227,8 +227,8 @@ revenue. Nine of the 18 categories each bring less than 2 %: Tableware, Textiles
 Wall art, Office, Candles, Plants, Kids, Pet and Gifts. Together they make about 10 %.
 
 **How to reveal it:** a bar chart of all 18 categories ends in a row of slivers that
-are hard to read. `bar_plot` with `top_n=6` keeps the six largest and folds the rest
-into one "Other" bar, which is the honest summary of the tail.
+are hard to read. Keeping the six largest (`top_n=6`) and folding the rest into one
+"Other" bar is the honest summary of the tail.
 
 ## 6. Correlated variable blocks
 
@@ -244,7 +244,7 @@ block's factor, plus noise.
 **Strength:** inside a block, column pairs correlate with a median |r| of 0.67, and
 never below 0.57. Between blocks, no pair goes above |r| = 0.05.
 
-**How to reveal it:** `correlation_heatmap` of these 11 columns in table order looks
+**How to reveal it:** a correlation heatmap of these 11 columns in table order looks
 like a patchwork. With cluster ordering, the columns regroup into three bright
 squares on the diagonal, with the negative satisfaction column inside the service
 square.
@@ -263,7 +263,7 @@ are missing, the incomes you can see are biased upwards: the observed Student me
 is about $23,000, while Student incomes were drawn around a median of $17,000. No
 summary of the column alone can show this.
 
-**How to reveal it:** `missing_values_plot` of `customers` shows that only
+**How to reveal it:** a missing-values chart of `customers` shows that only
 `annual_income` has gaps; split by `segment`, it shows that the gaps sit almost
 entirely in one segment. That is the cue not to fill them with an average.
 
@@ -279,9 +279,10 @@ from the right price, so revenue is correct on every row.
 100 times `revenue` / (`quantity` x (1 - `discount`)), up to the rounding of revenue
 to cents.
 
-**How to reveal it:** `box_plot` of `unit_price` by category on a linear axis is
-squashed flat by a few points in the thousands of dollars (up to about $40,000). With a log y axis, the typos form a
-separate band exactly two orders of magnitude above each box.
+**How to reveal it:** a box plot of `unit_price` by category on a linear axis is
+squashed flat by a few points in the thousands of dollars (up to about $40,000).
+With a log y axis, the typos form a separate band exactly two orders of magnitude
+above each box.
 
 ## 9. An overconfident churn model
 
@@ -300,9 +301,9 @@ them actually churned. At the other end, the lowest decile predicts 0.4 % and se
 2.7 %. On average the model predicts 26 % churn against an actual 20 %. Churners have
 a mean satisfaction of 6.2 against 7.5 for members who stayed.
 
-**How to reveal it:** an ROC curve alone says the model is good. `calibration_plot`
+**How to reveal it:** an ROC curve alone says the model is good. A calibration curve
 shows the S-shaped gap: the curve sits below the diagonal at high scores and above it
-at low scores. `threshold_sweep_plot` shows what that means for a retention campaign:
+at low scores. A threshold sweep shows what that means for a retention campaign:
 the 305 members scored 0.5 or more were each given at least a 50 % chance of leaving
 (0.77 on average), yet only 49 % of them churned, and they include only half of all
 churners (148 of 297).
@@ -323,5 +324,5 @@ pair (A $71.6 to $89.7, B $76.7 to $100.0, C $73.9 to $94.4; 4,000 resamples, se
 0), and a one-way ANOVA gives p = 0.62.
 
 **How to reveal it:** a bar chart of mean order value per variant crowns B.
-`grouped_bar_plot` by variant and device with bootstrap confidence intervals shows
+Bars by variant and device with bootstrap confidence intervals show
 error bars that overlap everywhere: there is no winner to ship.
