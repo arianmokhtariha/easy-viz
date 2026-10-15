@@ -11,7 +11,8 @@ authors = [{ name = "Arian Mokhtariha" }]
 # environments without forcing them to up- or downgrade anything.
 dependencies = [
     "plotly>=7.1",     # rendering core
-    "narwhals>=2.0",   # accepts pandas / polars / pyarrow / ... without depending on them
+    "narwhals>=2.8",   # accepts pandas / polars / pyarrow / ... without depending on them;
+                       # 2.8 is the first that reads DuckDB 1.5 query results
     "numpy>=2.1",      # numeric work; 2.1 is the first with Python 3.13 wheels
     "scipy>=1.14.1",   # statistics (KDE, regression, clustering, distributions);
                        # 1.14.1 is the first with Python 3.13 wheels
