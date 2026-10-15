@@ -53,7 +53,8 @@ The figure-level layout and text every plot shares, so no plot re-solves it:
   category count: each band takes two text lines of the theme's font, plus the title
   block and two bands for the value axis, and the height is the larger of the two.
 - **`format_value(value, spec)`** formats a number for labels and hover. A Python
-  format spec is applied as given; `None` is the automatic format: three significant
+  format spec is applied as given (integer types such as `",d"` round the value
+  first, since Python refuses a float for them); `None` is the automatic format: three significant
   digits with k, M, B or T (`862k`, `1.08M`)
   ([decision 0011](../../decisions/0011-automatic-value-format.md)). The suffix loop
   tests the *rounded* text, so 999,999 becomes `1M`, never `1e+03k`.

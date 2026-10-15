@@ -14,6 +14,7 @@ from easy_viz.theme import get_theme
 
 SALES = {
     "region": ["North", "South", "East"],
+    "segment": ["Retail", "Retail", "Online"],
     "revenue": [300.0, 100.0, 200.0],
     "cost": [120.0, 80.0, 90.0],
 }
@@ -239,30 +240,33 @@ def test_value_colouring_modes() -> None:
 # --- conflicts and no-effect options --------------------------------------------------
 
 CONFLICTS = [
-    ({"y": ["revenue", "cost"], "color": "region"}, ["y=", "color="]),
+    ({"y": ["revenue", "cost"], "color": "segment"}, ["y=", "color="]),
     ({"ci": "bootstrap"}, ["ci='bootstrap'", "agg"]),
     ({"agg": "median", "ci": "sem"}, ["ci='sem'", "agg='median'"]),
-    ({"agg": "mean", "ci": "sem", "barmode": "stack", "color": "region"},
+    ({"agg": "mean", "ci": "sem", "barmode": "stack", "color": "segment"},
      ["ci='sem'", "barmode='stack'"]),
-    ({"barmode": "percent", "avg_line": True, "color": "region"},
+    ({"barmode": "percent", "avg_line": True, "color": "segment"},
      ["avg_line=True", "barmode='percent'"]),
-    ({"barmode": "percent", "target": 1.0, "color": "region"},
+    ({"barmode": "percent", "target": 1.0, "color": "segment"},
      ["target=1.0", "barmode='percent'"]),
-    ({"barmode": "percent", "show_pct_of_total": True, "color": "region"},
+    ({"barmode": "percent", "show_pct_of_total": True, "color": "segment"},
      ["show_pct_of_total", "barmode='percent'"]),
     ({"other": True}, ["other=True", "top_n"]),
     ({"show_n": True}, ["show_n=True", "agg"]),
-    ({"highlight": "North", "color": "region"}, ["highlight='North'", "color="]),
+    ({"highlight": "North", "color": "segment"}, ["highlight='North'", "color="]),
     ({"highlight": "North", "y": ["revenue", "cost"]}, ["highlight='North'", "y="]),
     ({"highlight": "North", "color_by_value": "sign"},
      ["highlight='North'", "color_by_value='sign'"]),
-    ({"color_by_value": "sign", "color": "region"},
+    ({"color_by_value": "sign", "color": "segment"},
      ["color_by_value='sign'", "color="]),
     ({"color_by_value": "sign", "color_map": {"a": "#000000"}},
      ["color_by_value='sign'", "color_map"]),
     ({"colorscale": "Viridis"}, ["colorscale='Viridis'", "color_by_value"]),
     ({"color_midpoint": 1.0}, ["color_midpoint=1.0", "color_by_value"]),
     ({"color_map": {"a": "#000000"}}, ["color_map", "several series"]),
+    ({"color_by_value": "sign", "y": ["revenue", "cost"]},
+     ["color_by_value='sign'", "y="]),
+    ({"color": "region"}, ["color='region'", "same column as x"]),
 ]  # fmt: skip
 
 
@@ -352,3 +356,49 @@ def test_the_value_axis_reads_like_the_labels() -> None:
     assert fig.layout.yaxis.tickformat == "+.1%"
     # Without a spec d3 shares, Plotly keeps its own tick format.
     assert ev.bar_plot(df, "c", "change").layout.yaxis.tickformat is None
+
+
+@pytest.mark.parametrize(
+    "options",
+    [{"top_n": 1}, {"highlight": "2025-01-01"}],
+    ids=["top_n", "highlight"],
+)
+def test_a_time_x_refuses_cutting_or_picking_dates(options: dict[str, object]) -> None:
+    df = pd.DataFrame({"month": ["2025-02-01", "2025-01-01"], "orders": [5, 3]})
+    with pytest.raises(ValueError, match=r"time column"):
+        ev.bar_plot(df, "month", "orders", **options)  # type: ignore[arg-type]
+
+
+def test_hover_with_agg_never_drops_rows_from_the_bars() -> None:
+    # A NULL in a hover column must not remove a row the sums are built from.
+    df = pd.DataFrame({"g": ["a", "a", "b"], "v": [1.0, 2.0, 3.0],
+                       "note": ["x", None, "y"]})  # fmt: skip
+    with pytest.warns(EasyVizWarning, match="hover='note' has no effect"):
+        fig = ev.bar_plot(df, "g", "v", agg="sum", hover="note")
+    assert list(bars(fig)[0].y) == [3.0, 3.0]
+
+
+def test_one_series_ignores_barmode_in_the_drawing_too() -> None:
+    df = pd.DataFrame(SALES)
+    with pytest.warns(EasyVizWarning, match="barmode='percent' has no effect"):
+        fig = ev.bar_plot(df, "region", "revenue", barmode="percent")
+    assert fig.layout.barnorm is None
+    assert bars(fig)[0].text == ("300", "100", "200")
+    assert bars(fig)[0].textposition == "outside"
+
+
+def test_a_cut_category_called_other_never_lends_its_hover_to_the_other_bar() -> None:
+    df = pd.DataFrame(
+        {"cat": ["a", "b", "Other", "c"], "v": [10.0, 9.0, 1.0, 2.0],
+         "note": ["A", "B", "THE CUT ROW", "C"]}
+    )  # fmt: skip
+    (trace,) = bars(ev.bar_plot(df, "cat", "v", hover="note", top_n=2, other=True))
+    assert list(trace.x) == ["a", "b", "Other"]
+    assert trace.y[2] == 3.0
+    assert "THE CUT ROW" not in trace.hovertext[2]
+
+
+def test_integer_format_specs_work_on_counts() -> None:
+    df = pd.DataFrame({"cat": ["a"] * 1234 + ["b"]})
+    fig = ev.bar_plot(df, "cat", agg="count", value_format=",d")
+    assert bars(fig)[0].text == ("1,234", "1")

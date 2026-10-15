@@ -12,9 +12,13 @@ The function runs in stages, each a helper below:
 4. ``_draw``: traces, labels, colours, reference lines, layout
 """
 
+import dataclasses
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+
+# Any: values read back from a table (to_dict) are the backend's own Python
+# values, and Plotly specs are untyped dicts; neither has a type to name here.
 from typing import Any
 
 import narwhals as nw
@@ -226,10 +230,13 @@ def bar_plot(
         ``color`` when it is a list.
     color : str or None, default None
         Column that splits the bars into coloured series (long format), drawn
-        side by side or stacked (``barmode``). Conflicts with a list ``y``.
+        side by side or stacked (``barmode``). Conflicts with a list ``y``, and
+        can't be ``x`` itself: to colour the bars, use ``highlight`` or
+        ``color_by_value``.
     hover : str, list of str or None, default None
-        Extra columns shown on hover. Only with ``agg=None``: an aggregated bar
-        has no single value for them (they are dropped with a warning).
+        Extra columns shown on hover. Only with ``agg=None``: a combined bar has
+        no single value for them, so with ``agg`` they are ignored with a warning
+        (and their missing values drop no rows).
     agg : {"sum", "mean", "median", "min", "max", "count"} or None, default None
         ``None`` plots each row as-is and raises if an ``x``/``color``
         combination repeats. Otherwise rows are combined per bar; ``"count"``
@@ -270,7 +277,8 @@ def bar_plot(
     barmode : {"group", "stack", "percent"}, default "group"
         How several series share a category: side by side, stacked (with the
         total above each stack), or stacked to 100 % (each segment's share).
-        ``"percent"`` needs values of 0 or more.
+        ``"percent"`` needs values of 0 or more. A single series is drawn as
+        ``"group"``, with a warning.
     bargap : float, default 0.15
         Gap between categories, as a fraction of a category's width (0 to 1).
     bargroupgap : float, default 0.1
@@ -411,9 +419,17 @@ def bar_plot(
         y_title=y_title,
         width=width,
     )
+    check_choice(FUNC, "barmode", o.barmode, BarMode)
+    if not o.multi and o.barmode != "group":
+        # One series has nothing to stack: draw it plainly, and say so.
+        warn_no_effect(FUNC, "barmode", o.barmode, "with a single series")
+        o = dataclasses.replace(o, barmode="group")
     _check_options(o, y=y, highlight=highlight, width=width, height=height)
     chosen = resolve_theme(theme, caller=FUNC)
-    frame = _data.load(df, FUNC, {"x": x, "y": y, "color": color, "hover": hover})
+    # With agg, hover has no effect: it isn't loaded, so its nulls can't drop rows
+    # that the bars are computed from (only used columns count, rule 7).
+    used_hover = hover if agg is None else None
+    frame = _data.load(df, FUNC, {"x": x, "y": y, "color": color, "hover": used_hover})
     _data.require_numeric(frame, FUNC, {"y": y})
     frame = _data.parse_time(frame, FUNC, "x", x)
     is_time = _data.column_kind(frame, x) == "temporal"
@@ -483,6 +499,15 @@ def _check_options(
                 FUNC,
                 "y is not set",
                 "Pass the measure column as y, or use agg='count' to count rows",
+            )
+        )
+    if o.color is not None and o.color == o.x:
+        raise ValueError(
+            message(
+                FUNC,
+                f"{setting('color', o.color)} is the same column as x",
+                "color splits each category into series; to colour the bars "
+                "themselves, use highlight or color_by_value",
             )
         )
     if o.wide and o.color is not None:
@@ -585,11 +610,8 @@ def _check_ordering_and_layout(
         warn_no_effect(FUNC, "ascending", o.ascending, "without sort_by")
     for param, value in (("bargap", o.bargap), ("bargroupgap", o.bargroupgap)):
         check_range(FUNC, param, value, low=0, high=1, include_high=False)
-    if not o.multi:
-        if o.barmode != "group":
-            warn_no_effect(FUNC, "barmode", o.barmode, "with a single series")
-        if o.bargroupgap != BARGROUPGAP:
-            warn_no_effect(FUNC, "bargroupgap", o.bargroupgap, "with a single series")
+    if not o.multi and o.bargroupgap != BARGROUPGAP:
+        warn_no_effect(FUNC, "bargroupgap", o.bargroupgap, "with a single series")
     for param, size in (("width", width), ("height", height)):
         if size is not None:
             check_positive_int(FUNC, param, size)
@@ -609,6 +631,14 @@ def _check_labels(o: _Options) -> None:
             )
         ) from None
     check_requires(FUNC, "show_n", o.show_n, needs="agg", needs_value=o.agg)
+    if o.hover and o.agg is not None:
+        shown = o.hover[0] if len(o.hover) == 1 else o.hover
+        warn_no_effect(
+            FUNC,
+            "hover",
+            shown,
+            f"with {setting('agg', o.agg)}: a combined bar has no single value for it",
+        )
     if o.show_pct_of_total and o.barmode == "percent":
         raise ValueError(
             _mode_conflict("show_pct_of_total", True, "barmode", o.barmode)
@@ -801,13 +831,19 @@ def _shape(frame: _data.Frame, o: _Options) -> _Bars:
         other_rows = other_table.to_dict(as_series=False)
 
     columns: list[object] = [*kept, *([other_label] if other_label else [])]
-    where = {category: index for index, category in enumerate(columns)}
     which = {name: index for index, name in enumerate(series)}
     shape = (len(series), len(columns))
     values = np.full(shape, np.nan)
     hover: list[list[list[tuple[str, str]]]] = [[[] for _ in columns] for _ in series]
+    # Each source fills only its own columns: the main table the kept categories,
+    # the cut rows the "Other" bar. A cut category that is itself called "Other"
+    # can then never land on the "Other" bar.
+    kept_columns: dict[object, int] = {c: index for index, c in enumerate(kept)}
+    other_column: dict[object, int] = {other_label: len(kept)} if other_label else {}
 
-    def cell(table_rows: Mapping[str, list[Any]], i: int) -> list[tuple[int, int]]:
+    def cell(
+        table_rows: Mapping[str, list[Any]], i: int, where: Mapping[object, int]
+    ) -> list[tuple[int, int]]:
         """Return the (series, category) positions row ``i`` of a table fills."""
         column = where.get(table_rows[o.x][i])
         if column is None:
@@ -816,28 +852,30 @@ def _shape(frame: _data.Frame, o: _Options) -> _Bars:
             return [(which[str(table_rows[o.color][i])], column)]
         return [(k, column) for k in range(len(series))]
 
-    for table_rows in (rows, other_rows):
+    for table_rows, where in ((rows, kept_columns), (other_rows, other_column)):
         for i in range(len(table_rows.get(o.x, []))):
-            for s, c in cell(table_rows, i):
+            for s, c in cell(table_rows, i, where):
                 values[s, c] = table_rows[value_columns[s if o.wide else 0]][i]
                 if o.agg is None and table_rows is rows:
                     hover[s][c] = [(h, _text(rows[h][i])) for h in o.hover]
 
-    sources = [frame] if rest is None else [frame, rest]
+    sources = [(frame, kept_columns)]
+    if rest is not None:
+        sources.append((rest, other_column))
     n = low = high = None
     if o.agg is not None:
         n = np.full(shape, np.nan)
-        for source in sources:
+        for source, where in sources:
             counted, count_columns = _data.aggregate(
                 source.select(*key_columns, *o.ys), FUNC, key_params, o.ys, "count"
             )
             count_rows = counted.to_dict(as_series=False)
             for i in range(len(counted)):
-                for s, c in cell(count_rows, i):
+                for s, c in cell(count_rows, i, where):
                     n[s, c] = count_rows[count_columns[0]][i]
     if o.ci is not None and o.agg in ("mean", "median"):
         low, high = np.full(shape, np.nan), np.full(shape, np.nan)
-        for source in sources:
+        for source, where in sources:
             for k, column in enumerate(o.ys):
                 groups = _data.group_arrays(source, key_columns, column)
                 for key, sample in groups.items():

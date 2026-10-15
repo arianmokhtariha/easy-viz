@@ -6,7 +6,8 @@ kitchenware, bedding, lighting and smaller decor. Customers can buy a paid membe
 years of the business, from 2024-01-01 to 2025-12-31, in seven tables that join on
 their keys and agree with each other.
 
-Eleven patterns are hidden in the data on purpose. Each one is the kind of thing a
+Ten patterns are planted in the data on purpose, and an eleventh follows from two
+of them. Each one is the kind of thing a
 default chart misses, and each one is revealed by a specific easy-viz chart and
 option. This page lists them all: where each pattern is, how it was made, how strong it
 is, and how to find it.

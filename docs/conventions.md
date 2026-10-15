@@ -31,7 +31,7 @@ One name per concept, in every function.
 | `color_by_value`, `colorscale`, `color_midpoint` | colour marks by their own value (`"sequential"`, `"diverging"`, `"sign"`); the scale; where the colour turns |
 | `avg_line`, `target` | reference lines at the average and at a target value |
 | `x_title`, `y_title` | axis titles of the `x` and `y` slots, wherever `orientation` draws them |
-| `color_map` | `dict[str, str]`: fixed colour per category, identical across charts |
+| `color_map` | `dict[str, str]`: fixed colour per series (a `color` value or a `y` column), identical across charts |
 | `highlight` | category or categories to emphasise; the rest use the theme's dimmed colour |
 | `title`, `subtitle` | `subtitle` carries the method note or the measure |
 | `width`, `height` | px; `height=None` means auto-size |

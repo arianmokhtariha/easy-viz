@@ -26,6 +26,9 @@ _BAND_LINES = 2
 # to tell whether a label fits a bar, not to place text.
 _GLYPH_WIDTH = 0.6
 
+# Python format types that need an int: decimal, binary, octal, hex, locale number.
+_INTEGER_TYPES = frozenset("dboxXn")
+
 # Suffixes of the automatic value format: thousands, millions, billions, trillions.
 _SUFFIXES = ("", "k", "M", "B", "T")
 
@@ -82,6 +85,9 @@ def format_value(value: float, spec: str | None) -> str:
         The formatted value.
     """
     if spec is not None:
+        # Integer types (",d" for counts) refuse floats: round, as the spec asks.
+        if spec[-1:] in _INTEGER_TYPES:
+            return format(round(value), spec)
         return format(value, spec)
     step, scaled = 0, value
     # Rounding can carry into the next unit (999,999 is 1e+03k), so test the

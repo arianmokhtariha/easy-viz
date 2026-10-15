@@ -15,7 +15,9 @@ third legacy function, `pareto_plot`, also draws bars per category, but adds a
 cumulative line on a second axis and a cutoff.
 
 Porting is also redesign (plots guide), so the product manager decided the shape of
-the merged function in plan 0003.
+the merged function when approving plan 0003. The plan was graduated in the pull
+request that added `bar_plot`, whose description keeps its scope and decisions; this
+record keeps the decisions.
 
 ## Decision
 Product manager, 2026-10-15:
@@ -57,5 +59,8 @@ Product manager, 2026-10-15:
     (the legacy function silently switched to bootstrap), bars keep the query's order
     unless `sort_by` is set (the legacy `grouped_bar_plot` always ranked by value),
     nulls are dropped with a warning
+  - bootstrap intervals use the same method and seed (0), but numpy's current
+    generator (`default_rng`) instead of the legacy `RandomState`, so their exact
+    ends differ slightly from the original module's
 - Value colouring needed a scale whose lowest colour stays visible on the plot area,
   so `Theme` gained `marker_sequential_scale`.

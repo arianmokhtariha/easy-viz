@@ -13,14 +13,21 @@ docstring, not restated here.
 The function is a short pipeline of private helpers; `_Options` (frozen) carries
 every option between them.
 
+0. **`barmode` with one series**: there is nothing to stack, so a warning says so
+   and the options carry `barmode="group"` from then on; drawing never stacks, 100 %
+   normalises or moves labels inside for a single series.
 1. **`_check_options`**: everything that needs no data. Choices, the query-shape
-   rules (`y` needed unless `agg="count"`; a list `y` and `color` conflict), then one
+   rules (`y` needed unless `agg="count"`; a list `y` and `color` conflict; `color`
+   can't be `x` itself), then one
    helper per option group (`_check_statistics`, `_check_ordering_and_layout`,
    `_check_labels`, `_check_colour`). Conflicts raise; options with no effect in the
    current mode warn (`_validate.warn_no_effect`). "Changed from its default" is read
    against the module constants (`CI_LEVEL`, `N_BOOT`, ...), which are also the
    signature's defaults.
-2. **`_data` intake**: `load`, `require_numeric`, `parse_time`. A time `x` then
+2. **`_data` intake**: `load`, `require_numeric`, `parse_time`. With `agg` set, the
+   `hover` columns are not loaded at all (they were warned about in step 1): a
+   missing value in a column that is not drawn must not drop a row the bars are
+   computed from. A time `x` then
    refuses `sort_by`, `top_n` and `highlight` (`_check_time_axis`) before nulls are
    dropped.
 3. **`_shape`** builds `_Bars`: a series × category grid of values (NaN = no bar),
@@ -35,6 +42,10 @@ every option between them.
      rows (right for every aggregate), summed when `agg=None`. Its counts and
      interval come from the same rows. The label becomes "Other (N categories)" if a
      kept category is already called "Other".
+   - Each source fills only its own columns of the grid: the main table the kept
+     categories, the cut rows the "Other" bar. A *cut* category that is itself called
+     "Other" therefore never lends its values, hover, count or interval to the
+     "Other" bar.
    - Intervals: `_data.group_arrays` gives each bar's raw values,
      `stats.intervals.interval` the bounds.
 4. **`_check_bars`**: checks that need the data: negative values with
