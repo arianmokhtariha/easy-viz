@@ -17,6 +17,10 @@ re-run `uv run python gallery/data/generate.py`. `tests/test_showcase_data.py` c
 every row of the summary below against the committed CSV files, and checks that the
 files are exactly what the generator produces.
 
+These ten patterns are the starting set, not the full list. The dataset grows one plot
+function at a time: each port adds the patterns its options and scenarios need, so
+every notebook has a real story to tell.
+
 ## Summary
 
 The test reads this table. Each row is one measurement on the committed CSV files.

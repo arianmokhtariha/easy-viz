@@ -47,6 +47,21 @@ def test_load_collects_a_lazy_frame() -> None:
     assert frame["region"].to_list() == SALES["region"]
 
 
+def test_load_takes_a_duckdb_query_result_as_it_is() -> None:
+    # Product principle 1 in its purest form: db.sql(...) straight into a plot,
+    # with no .df() / .pl() step, and SQL types normalised like any other table.
+    duckdb = pytest.importorskip("duckdb")  # no 3.15 wheel yet (decision 0009)
+    result = duckdb.sql(
+        "SELECT 'North' AS region, 12.50::DECIMAL(10, 2) AS revenue, "
+        "DATE '2026-01-31' AS day, 'unused' AS note"
+    )
+    frame = load(result, "bar_plot", {"x": "day", "y": "revenue"})
+    assert isinstance(frame, nw.DataFrame)
+    assert frame.columns == ["day", "revenue"]
+    assert frame.schema == {"day": nw.Datetime("us"), "revenue": nw.Float64()}
+    assert frame["revenue"].to_list() == [12.5]
+
+
 @pytest.mark.parametrize(
     ("df", "shown"), [([1, 2], "list"), (pd.Series([1, 2]), "Series")]
 )

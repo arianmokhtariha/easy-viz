@@ -8,7 +8,8 @@ that a plot function can draw from. It is the only module that converts, checks 
 normalises user tables
 ([decision 0004](../../decisions/0004-narwhals-dataframe-agnostic.md)), and it applies
 the query-result shape rules of [the conventions](../../conventions.md#query-result-shapes):
-- intake of any table narwhals accepts, eager or lazy
+- intake of any table narwhals accepts, eager or lazy (a polars `LazyFrame`, or a
+  DuckDB query result passed as it is)
 - column existence and dtype checks, with messages that name the parameter
 - SQL type normalisation (rule 6)
 - ISO-date strings as time (rule 5)

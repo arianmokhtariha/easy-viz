@@ -12,7 +12,10 @@ Where easy-viz stands. Updated in the PR that changes it.
 
 ## Later
 - Port the remaining functions by family: distribution, relationship, comparison,
-  timeseries, business, ml
+  timeseries, business, ml. One function at a time, each port also a redesign
+  against the product principles: the improvements and features found along the way
+  are built or listed here, and the showcase data grows the patterns that function's
+  options reveal
 - Report features: waterfall, cohort heatmap, `highlight`, `color_map`, takeaway titles
 - Docs site rendering the gallery notebooks
 - README showcase built from gallery images

@@ -49,7 +49,8 @@ data/generate.py ──► data/*.csv ──► notebooks (SQL through DuckDB) �
   from a family folder and at `data` from `gallery/` itself. A notebook moved to
   another depth needs that path changed.
 - **DuckDB's `.arrow()` returns a stream in DuckDB 1.5** (a `RecordBatchReader`),
-  which easy-viz does not accept. Use `.to_arrow_table()` for a pyarrow table.
+  which easy-viz does not accept. Pass the query result itself (easy-viz reads only
+  the columns the chart uses), or `.to_arrow_table()` for a pyarrow table.
 - **DuckDB infers each CSV column's type** on every query: dates become `DATE`,
   empty fields `NULL`. A generator change that alters how a column is written (e.g. a
   date with a time part) changes what the notebooks receive.

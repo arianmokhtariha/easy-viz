@@ -45,8 +45,9 @@ folder, fill it, and delete the notes. Sections in this order:
 - **Data comes only from `gallery/data/`, through SQL**
   ([decision 0009](../docs/decisions/0009-gallery-sql-duckdb.md)): the template's
   setup cell makes every CSV a DuckDB view, and each chart starts from a query whose
-  result goes straight into the plot. Vary the table type across notebooks
-  (`.pl()`, `.df()`, `.to_arrow_table()`), never reshape between query and plot.
+  result goes straight into the plot. Vary what is passed across notebooks (the
+  query result itself, `.pl()`, `.df()`, `.to_arrow_table()`), never reshape
+  between query and plot.
 - **Only the public API:** `import easy_viz as ev`, never internal modules.
 - **Every planted pattern is documented in `INSIGHTS.md`** and asserted by a test.
   Changing the generator must not silently remove a story.
