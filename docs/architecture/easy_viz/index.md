@@ -32,7 +32,7 @@ checkers in users' projects read its annotations.
 | `export.py` | [export.md](export.md) | `save` and `save_many`: static image export through kaleido and Chrome |
 | `theme/` | [theme/index.md](theme/index.md) | the `Theme` dataclass, the built-in `dark` and `light` themes, global and per-call theme, Plotly templates |
 | `plots/` | [plots/index.md](plots/index.md) | the public plot functions, one module per family |
-| `stats/` | [stats/index.md](stats/index.md) | statistics behind the plots (confidence intervals) |
+| `stats/` | [stats/index.md](stats/index.md) | statistics behind the plots (confidence intervals, rolling mean) |
 
 **How a plot function uses them**, in order:
 1. Check its options with `_validate` (choices, conflicts, ranges).

@@ -14,7 +14,8 @@ Covers: src/easy_viz/theme/registry.py
 - **`DARK`** is the house style of the original module: page `#0e1117` around a
   `#1a1a1a` plot area, Plotly's ten-colour qualitative palette, gold reference lines,
   and the module's label-safe scales (`_CORR_DIVERGING`, `SEQ_BLUE`), marker scale
-  (`_RDBU`) and severity ramp, unchanged.
+  (`_RDBU`) and severity ramp, unchanged. Its series sizes are the original
+  `line_plot` defaults: 2 px lines, 6 px markers. `LIGHT` uses the same sizes.
 - **`LIGHT`** is its equal for white-page reports: the same roles and hue order,
   darkened where white needs it (yellow becomes mustard, gold becomes a dark amber),
   and its own light-surface scales whose cell labels use dark text. Both scales were

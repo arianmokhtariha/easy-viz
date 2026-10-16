@@ -15,6 +15,8 @@ the query-result shape rules of [the conventions](../../conventions.md#query-res
 - ISO-date strings as time (rule 5)
 - dropping missing values with a warning (rule 7)
 - the pre-aggregated check and aggregation with `agg` (rules 1, 2, 4)
+- calendar periods for a time axis: truncating to a grain, reading the grain from
+  the data, and listing every period in a range, so a chart can show empty periods
 - the exit to numpy for statistics
 
 It replaces `_is_categorical_col` and the column checks that every function of the
@@ -90,6 +92,46 @@ median path (`_group_ids`).
 `to_float_array(frame, column)` returns a numeric column as a `float64` numpy array
 with missing values as NaN: the point where narwhals stops and `stats/` starts.
 
+### Calendar periods
+Three functions let a time axis be continuous: every period between the first and
+the last date is on the chart, even where the data has no row (a SQL `GROUP BY`
+returns no row for an empty period). The grains are `TimeGrain` in `_typing`:
+`"hour"`, `"day"`, `"week"`, `"month"`, `"quarter"`, `"year"`. A period starts at
+midnight; a week on Monday (as SQL's `date_trunc('week', ...)`), a quarter on
+Jan/Apr/Jul/Oct 1.
+
+- **`truncate_time(frame, column, grain)`** replaces a temporal column with the start
+  of each value's period, as a naive `Datetime("us")` column. Missing values stay
+  missing; other columns and row order are untouched.
+- **`infer_grain(frame, func, column)`** reads the grain from the distinct values:
+  the coarsest grain that *every* value starts a period of, provided the two closest
+  values are exactly one period apart. Daily data is `"day"`, the output of
+  `date_trunc('month', ...)` is `"month"`, and periods missing elsewhere don't
+  change it (monthly data without March is still `"month"`). One distinct value
+  gives its coarsest grain. The grain is ambiguous, and a `ValueError` names
+  `time_grain` and the column, when:
+  - a value is not on a whole hour (raw timestamps): the fix suggests
+    `time_grain='day'`
+  - the closest values are more than one period apart (every other day, every two
+    weeks, daily data with one stray noon value): the fix suggests the next coarser
+    grain, if there is one
+
+  Both messages offer `time_grain=None` (draw the points as they are) as the way out.
+- **`period_grid(start, end, grain)`** lists every period start from `start` to
+  `end`, both included, as Python `datetime`s. Both must already be period starts
+  (from `truncate_time`), `start` first; otherwise it raises.
+
+All three share one calendar, in numpy: a value's period number is its cast to the
+grain's numpy unit (`datetime64[h]`, `[D]`, `[M]`, `[Y]`), shifted and divided by
+the period size (`_PERIODS`): weeks are blocks of 7 days shifted by 3 (day 0,
+1970-01-01, was a Thursday), quarters are blocks of 3 months. Consecutive periods get
+consecutive numbers, so a gap is a difference of numbers and a grid is a range of
+them, with months, quarters, years and leap days exact by construction.
+`_period_start` turns numbers back into `datetime64[us]` starts. The column reaches
+numpy through `_wall_clock` (`to_numpy`, as `datetime64[us]`), and the result goes
+back with `nw.new_series` on the frame's own backend, so pandas, polars and pyarrow
+give identical results.
+
 ## Invariants
 - The user's table is never modified: every step returns a new narwhals frame
   (`with_columns`, `filter`, `select` never write to the native object).
@@ -146,3 +188,20 @@ with missing values as NaN: the point where narwhals stops and `stats/` starts.
   with a warning): mixing offsets on one axis has no single correct reading.
 - **pandas `Period` columns** are reported as `Unknown` and classed as categorical;
   they are not a SQL type, so no conversion exists.
+- **Time-zone-aware columns are bucketed in their own wall-clock time, and lose their
+  zone.** `to_numpy` on an aware column gives UTC instants, so daily data at midnight
+  in Tokyo would read as 15:00 every day (hours, 24 apart) and raise, and a day would
+  be a UTC day. `_wall_clock` first drops the zone with `dt.replace_time_zone(None)`,
+  which keeps the local time on every backend. The truncated column stays naive:
+  re-attaching the zone could land on a local time that doesn't exist or exists
+  twice at a daylight-saving change, and the period labels are local dates anyway.
+  (Aware values in a pandas `object` column never get here: they stay categorical,
+  see above.)
+- **numpy's datetime casts floor, which the calendar relies on.** `1969-12-31 18:00`
+  cast to `datetime64[D]` is 1969-12-31, and `//` floors negative numbers too, so
+  dates before 1970 land in the right period. Truncating toward zero (C-style
+  integer division) would put them one period late; a test with a 1969 value guards
+  it.
+- **Calendar logic runs on microseconds** (`datetime64[us]`): nanoseconds below a
+  microsecond are dropped, and the truncated column is `Datetime("us")` whatever its
+  input unit, the unit Python's `datetime` shares with every backend.

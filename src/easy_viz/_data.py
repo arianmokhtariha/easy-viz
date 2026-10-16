@@ -9,6 +9,9 @@ normalised narwhals ``DataFrame`` with a few calls, in this order::
     frame = drop_nulls(frame, func)
     frame, values = aggregate(frame, func, {"x": x, "color": color}, ys, agg)
 
+A time axis adds :func:`infer_grain`, :func:`truncate_time` and
+:func:`period_grid`: the calendar periods that keep it continuous.
+
 Everything runs on the user's own backend through narwhals (decision 0004);
 :func:`to_float_array` is the exit to numpy where statistics start.
 """
@@ -20,14 +23,14 @@ from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from decimal import Decimal
 from numbers import Real
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 import narwhals as nw
 import numpy as np
 import numpy.typing as npt
 from narwhals.exceptions import DuplicateError
 
-from easy_viz._typing import Agg, FrameLike
+from easy_viz._typing import Agg, FrameLike, TimeGrain
 from easy_viz._validate import check_choice, message, setting
 from easy_viz._warnings import warn
 
@@ -337,6 +340,224 @@ def parse_time(frame: Frame, func: str, param: str, column: str | None) -> Frame
     return frame.with_columns(
         nw.col(column).replace_strict(parsed, return_dtype=nw.Datetime())
     )
+
+
+# --- calendar periods (time_grain) -------------------------------------------
+
+# The grains, finest first, as TimeGrain lists them.
+_GRAINS: tuple[TimeGrain, ...] = get_args(TimeGrain)
+
+# Periods are numbered in numpy: cast to a calendar unit, shift, divide by a
+# size. Day 0 of numpy's calendar (1970-01-01) was a Thursday, so a shift of 3
+# days makes every 7-day block start on a Monday; month 0 is January 1970, so
+# blocks of 3 months start on Jan/Apr/Jul/Oct 1.
+_PERIODS: dict[TimeGrain, tuple[str, int, int]] = {
+    "hour": ("datetime64[h]", 1, 0),
+    "day": ("datetime64[D]", 1, 0),
+    "week": ("datetime64[D]", 7, 3),
+    "month": ("datetime64[M]", 1, 0),
+    "quarter": ("datetime64[M]", 3, 0),
+    "year": ("datetime64[Y]", 1, 0),
+}
+
+# Microseconds: the finest unit Python's datetime, numpy and every backend share.
+_TIME_UNIT = "datetime64[us]"
+
+
+def _period_index(
+    values: npt.NDArray[np.datetime64], grain: TimeGrain
+) -> npt.NDArray[np.int64]:
+    """Give each value its period number; consecutive periods count up by one.
+
+    numpy's unit casts floor, also before 1970, and the integer division
+    floors too, so every value lands in the period that contains it.
+    """
+    unit, size, shift = _PERIODS[grain]
+    return (values.astype(unit).astype(np.int64) + shift) // size
+
+
+def _period_start(
+    index: npt.NDArray[np.int64], grain: TimeGrain
+) -> npt.NDArray[np.datetime64]:
+    """Turn period numbers (see :func:`_period_index`) back into period starts."""
+    unit, size, shift = _PERIODS[grain]
+    return (index * size - shift).astype(unit).astype(_TIME_UNIT)
+
+
+def _wall_clock(frame: Frame, column: str) -> npt.NDArray[np.datetime64]:
+    """Return a temporal column as naive ``datetime64[us]``, missing as NaT.
+
+    A time-zone-aware column gives its local wall-clock times: a calendar
+    period ("the day of 2026-03-29") is a period of the column's own zone,
+    not of UTC.
+    """
+    series = frame[column]
+    dtype = series.dtype
+    if isinstance(dtype, nw.Datetime) and dtype.time_zone is not None:
+        series = series.dt.replace_time_zone(None)
+    return np.asarray(series.to_numpy(), dtype=_TIME_UNIT)
+
+
+def _show_time(value: np.datetime64) -> str:
+    """Show a moment in a message: a plain date at midnight, else date and time."""
+    moment: dt.datetime = value.astype(_TIME_UNIT).item()
+    return str(moment.date()) if moment.time() == dt.time() else str(moment)
+
+
+def truncate_time(frame: Frame, column: str, grain: TimeGrain) -> Frame:
+    """Floor a temporal column to the start of its calendar period.
+
+    Periods start at midnight; weeks on Monday (as SQL's
+    ``date_trunc('week', ...)``), quarters on Jan/Apr/Jul/Oct 1. Missing
+    values stay missing. The same numpy code runs for every backend.
+
+    Parameters
+    ----------
+    frame : narwhals.DataFrame
+        A frame whose ``column`` is temporal (``Date`` or ``Datetime``).
+    column : str
+        The column to truncate.
+    grain : TimeGrain
+        The period: ``"hour"``, ``"day"``, ``"week"``, ``"month"``,
+        ``"quarter"`` or ``"year"``.
+
+    Returns
+    -------
+    narwhals.DataFrame
+        ``frame`` with ``column`` replaced by naive ``Datetime("us")`` period
+        starts. A time-zone-aware column is truncated in its own wall-clock
+        time and loses its zone (see :func:`_wall_clock`).
+    """
+    values = _wall_clock(frame, column)
+    present = ~np.isnat(values)
+    floored = values.copy()
+    floored[present] = _period_start(_period_index(values[present], grain), grain)
+    namespace = nw.get_native_namespace(frame)
+    return frame.with_columns(
+        nw.new_series(column, floored, nw.Datetime("us"), backend=namespace)
+    )
+
+
+def infer_grain(frame: Frame, func: str, column: str) -> TimeGrain:
+    """Read the calendar grain of a temporal column from its values.
+
+    The grain is the coarsest one that every distinct value starts a period
+    of (hour: whole hours; day: midnight; week: midnight on Monday; month:
+    midnight on the 1st; quarter: the 1st of Jan/Apr/Jul/Oct; year: Jan 1),
+    provided the two closest distinct values are exactly one period apart.
+    Missing periods elsewhere don't matter: monthly data without March is
+    still ``"month"``. A single distinct value gives its coarsest grain.
+    Time-zone-aware values are read in their own wall-clock time.
+
+    Parameters
+    ----------
+    frame : narwhals.DataFrame
+        A frame whose ``column`` is temporal, with at least one non-null value.
+    func : str
+        Public function name, for messages.
+    column : str
+        The time column.
+
+    Returns
+    -------
+    TimeGrain
+        The grain the values sit on.
+
+    Raises
+    ------
+    ValueError
+        If the grain is ambiguous: a value is not on a whole hour (raw
+        timestamps), or the closest values are more than one period apart
+        (every other day, every two weeks). The message names ``time_grain``
+        and the column, and suggests a grain to bucket into, or
+        ``time_grain=None`` to draw the points as they are.
+    """
+    values = _wall_clock(frame, column)
+    distinct = np.unique(values[~np.isnat(values)])
+    aligned = [
+        grain
+        for grain in _GRAINS
+        if np.array_equal(
+            _period_start(_period_index(distinct, grain), grain), distinct
+        )
+    ]
+    problem = f"time_grain='auto' finds no calendar grain in {column!r}"
+    as_they_are = "time_grain=None to draw the points as they are"
+    if not aligned:
+        hours = _period_start(_period_index(distinct, "hour"), "hour")
+        off = distinct[hours != distinct][0]
+        raise ValueError(
+            message(
+                func,
+                f"{problem}: {_show_time(off)} is not on a whole hour",
+                f"Set time_grain to bucket the dates (e.g. time_grain='day'), or "
+                f"{as_they_are}",
+            )
+        )
+    grain = aligned[-1]
+    steps = np.diff(_period_index(distinct, grain))
+    if steps.size and steps.min() != 1:
+        at = int(np.argmin(steps))
+        position = _GRAINS.index(grain)
+        fix = f"Set {as_they_are}"
+        if position + 1 < len(_GRAINS):
+            coarser = _GRAINS[position + 1]
+            fix = (
+                f"Set time_grain to bucket them (e.g. time_grain={coarser!r}), or "
+                f"{as_they_are}"
+            )
+        raise ValueError(
+            message(
+                func,
+                f"{problem}: its dates fall on {grain} starts, but no two are one "
+                f"{grain} apart (closest: {_show_time(distinct[at])} and "
+                f"{_show_time(distinct[at + 1])})",
+                fix,
+            )
+        )
+    return grain
+
+
+def period_grid(
+    start: dt.datetime, end: dt.datetime, grain: TimeGrain
+) -> list[dt.datetime]:
+    """Every period start from ``start`` to ``end``, both included.
+
+    Calendar-correct: months, quarters and years step by the calendar, not
+    by a fixed number of days. The plot draws one point per period, so
+    periods without a row show as gaps (D3 of plan 0004).
+
+    Parameters
+    ----------
+    start, end : datetime.datetime
+        Naive period starts of ``grain`` (e.g. from :func:`truncate_time`),
+        ``start <= end``.
+    grain : TimeGrain
+        The period.
+
+    Returns
+    -------
+    list[datetime.datetime]
+        The period starts, in order.
+
+    Raises
+    ------
+    ValueError
+        If ``start`` or ``end`` is not a period start, or ``start > end``.
+    """
+    bounds = np.array([start, end], dtype=_TIME_UNIT)
+    first, last = _period_index(bounds, grain)
+    starts = _period_start(np.arange(first, last + 1, dtype=np.int64), grain)
+    if not starts.size or starts[0] != bounds[0] or starts[-1] != bounds[1]:
+        raise ValueError(
+            message(
+                "period_grid",
+                f"{start} and {end} are not {grain} starts in order",
+                "Pass truncated values (truncate_time), start first",
+            )
+        )
+    grid: list[dt.datetime] = starts.tolist()
+    return grid
 
 
 def _missing(frame: Frame, column: str) -> nw.Expr:

@@ -28,3 +28,8 @@ TextPosition = Literal["outside", "inside", "auto"]
 # How marks are coloured by their own value: a low-to-high scale, two directions
 # from a midpoint, or the theme's positive/negative colours.
 ValueColoring = Literal["sequential", "diverging", "sign"]
+
+# Calendar periods a time axis is bucketed into. Weeks start on Monday, as in
+# SQL's date_trunc('week', ...); quarters on Jan/Apr/Jul/Oct 1. Finest first:
+# _data reads this order.
+TimeGrain = Literal["hour", "day", "week", "month", "quarter", "year"]

@@ -101,6 +101,11 @@ class Theme:
         Subtitle size in px.
     label_font_size : int
         Small text in px: annotations and data labels.
+    line_width : int
+        Width in px of the lines that draw data series (a line chart's lines).
+    marker_size : int
+        Diameter in px of the markers on a series' data points (a line chart's
+        points).
     title_top_px : int
         Space between the figure's top edge and the title.
     title_gap_px : int
@@ -143,6 +148,8 @@ class Theme:
     title_font_size: Px
     subtitle_font_size: Px
     label_font_size: Px
+    line_width: Px
+    marker_size: Px
     title_top_px: Px
     title_gap_px: Px
     row_gap_px: Px
