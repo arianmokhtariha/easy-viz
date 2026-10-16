@@ -11,7 +11,8 @@ Nothing here is public.
 
 ## How it works
 **`intervals.py`: confidence interval of a group's mean or median**, ported from the
-legacy `_agg_ci` with the same behaviour. Used by `bar_plot`'s error bars.
+legacy `_agg_ci` with the same behaviour. Used by `bar_plot`'s error bars and
+`line_plot`'s confidence bands.
 - `interval(values, *, statistic, method, level, n_boot, random_state) -> Interval`
   (`estimate`, `low`, `high`, `n`).
 - `method="bootstrap"`: the *basic* bootstrap, `2 * estimate - quantile`, from
@@ -25,7 +26,8 @@ legacy `_agg_ci` with the same behaviour. Used by `bar_plot`'s error bars.
   value gives the estimate with NaN bounds (the legacy rule: an interval needs two
   values); identical values give a zero-width interval. `sem` with the median raises.
 
-**`smoothing.py`: the trailing rolling mean of a series.**
+**`smoothing.py`: the trailing rolling mean of a series**, behind `line_plot`'s
+`rolling`.
 - `rolling_mean(values, window) -> ndarray`: at each position, the mean of the
   values among the last `window` positions, the current one included. The semantics
   are exactly pandas' `Series.rolling(window, min_periods=1).mean()`, the number an

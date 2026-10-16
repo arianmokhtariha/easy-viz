@@ -398,6 +398,27 @@ def _wall_clock(frame: Frame, column: str) -> npt.NDArray[np.datetime64]:
     return np.asarray(series.to_numpy(), dtype=_TIME_UNIT)
 
 
+def time_array(frame: Frame, column: str) -> npt.NDArray[np.datetime64]:
+    """Return a temporal column as naive ``datetime64[us]``, missing as NaT.
+
+    The exit to numpy for time values, as :func:`to_float_array` is for
+    numbers: a plot orders and places dates with it. A time-zone-aware column
+    gives its own wall-clock times, as :func:`truncate_time` uses them.
+    """
+    return _wall_clock(frame, column)
+
+
+def floor_time(value: dt.datetime, grain: TimeGrain) -> dt.datetime:
+    """Return the start of the ``grain`` period that contains ``value``.
+
+    The same calendar as :func:`truncate_time`, for one naive value, e.g. to
+    find which period of a chart a date given as an option falls in.
+    """
+    moment = np.array([value], dtype=_TIME_UNIT)
+    start: dt.datetime = _period_start(_period_index(moment, grain), grain)[0].item()
+    return start
+
+
 def _show_time(value: np.datetime64) -> str:
     """Show a moment in a message: a plain date at midnight, else date and time."""
     moment: dt.datetime = value.astype(_TIME_UNIT).item()

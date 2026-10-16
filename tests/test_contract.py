@@ -64,6 +64,14 @@ REGISTRY: tuple[ContractCase, ...] = (
         data={"region": ["North", "South", "East"], "revenue": [3.0, 1.0, 2.0]},
         args=("region", "revenue"),
     ),
+    ContractCase(
+        easy_viz.line_plot,
+        data={
+            "month": ["2025-01-01", "2025-02-01", "2025-03-01"],
+            "orders": [3.0, 1.0, 2.0],
+        },
+        args=("month", "orders"),
+    ),
 )
 
 

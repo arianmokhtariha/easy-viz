@@ -17,7 +17,7 @@ the query-result shape rules of [the conventions](../../conventions.md#query-res
 - the pre-aggregated check and aggregation with `agg` (rules 1, 2, 4)
 - calendar periods for a time axis: truncating to a grain, reading the grain from
   the data, and listing every period in a range, so a chart can show empty periods
-- the exit to numpy for statistics
+- the exit to numpy for statistics (numbers) and for placing dates
 
 It replaces `_is_categorical_col` and the column checks that every function of the
 legacy module repeated.
@@ -121,7 +121,15 @@ Jan/Apr/Jul/Oct 1.
   `end`, both included, as Python `datetime`s. Both must already be period starts
   (from `truncate_time`), `start` first; otherwise it raises.
 
-All three share one calendar, in numpy: a value's period number is its cast to the
+Two small helpers serve a plot that places dates itself (`line_plot`):
+- **`time_array(frame, column)`** returns a temporal column as naive
+  `datetime64[us]` (missing as NaT, an aware column in its wall-clock time): the exit
+  to numpy for dates, as `to_float_array` is for numbers.
+- **`floor_time(value, grain)`** gives the start of the period containing one naive
+  `datetime`, with the same calendar as `truncate_time` (e.g. to tell which period of
+  the chart a date given as an option falls in).
+
+All of these share one calendar, in numpy: a value's period number is its cast to the
 grain's numpy unit (`datetime64[h]`, `[D]`, `[M]`, `[Y]`), shifted and divided by
 the period size (`_PERIODS`): weeks are blocks of 7 days shifted by 3 (day 0,
 1970-01-01, was a Thursday), quarters are blocks of 3 months. Consecutive periods get

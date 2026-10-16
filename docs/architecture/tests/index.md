@@ -1,6 +1,6 @@
 # Tests
 
-Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py, tests/test_packaging.py, tests/test_gallery.py, tests/test_showcase_data.py, tests/scripts/test_build_gallery.py, tests/stats/test_intervals.py, tests/plots/test_comparison.py
+Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py, tests/test_packaging.py, tests/test_gallery.py, tests/test_showcase_data.py, tests/scripts/test_build_gallery.py, tests/stats/test_intervals.py, tests/plots/test_comparison.py, tests/plots/test_timeseries.py
 
 ## Responsibilities
 Prove that the library is correct and that the repository stays consistent with
@@ -32,7 +32,7 @@ failure message names the file, the rule and the fix.
 
 ### `test_contract.py`
 Holds `REGISTRY`: one `ContractCase` (function, sample data, minimal call) per public
-plot function (today `bar_plot`). Each case is run on all three
+plot function (today `bar_plot` and `line_plot`). Each case is run on all three
 backends and must:
 - return a `go.Figure`;
 - leave the input table unchanged (compared through narwhals: schema and content, with

@@ -14,6 +14,7 @@ from easy_viz._data import (
     aggregate,
     column_kind,
     drop_nulls,
+    floor_time,
     group_arrays,
     infer_grain,
     load,
@@ -543,6 +544,20 @@ def test_period_grid_counts_leap_days() -> None:
     assert len(leap) == 366
     assert _d("2024-02-29") in leap
     assert len(period_grid(_d("2023-01-01"), _d("2023-12-31"), "day")) == 365
+
+
+@pytest.mark.parametrize(
+    ("value", "grain", "start"),
+    [
+        ("2025-01-01 13:45", "week", "2024-12-30"),  # the week starts in 2024
+        ("2025-05-31 23:59", "quarter", "2025-04-01"),
+        ("2024-02-29 08:00", "day", "2024-02-29"),
+    ],
+)
+def test_floor_time_uses_the_same_calendar_as_truncate_time(
+    value: str, grain: TimeGrain, start: str
+) -> None:
+    assert floor_time(_d(value), grain) == _d(start)
 
 
 @pytest.mark.parametrize(

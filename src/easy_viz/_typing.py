@@ -33,3 +33,15 @@ ValueColoring = Literal["sequential", "diverging", "sign"]
 # SQL's date_trunc('week', ...); quarters on Jan/Apr/Jul/Oct 1. Finest first:
 # _data reads this order.
 TimeGrain = Literal["hour", "day", "week", "month", "quarter", "year"]
+
+# How a line chart draws a period of its calendar that has no row: a break in
+# the line, a zero, or a line bridging it.
+MissingPeriods = Literal["gap", "zero", "connect"]
+
+# How a line runs between its points (Plotly's line.shape): straight, smoothed,
+# or in steps (horizontal-vertical and its variants).
+LineShape = Literal["linear", "spline", "hv", "vh", "hvh", "vhv"]
+
+# Which points of a line get their value written on them, besides all (True)
+# or none (False): the last one, the first and last, each series' max and min.
+ValueLabels = Literal["last", "ends", "extremes"]

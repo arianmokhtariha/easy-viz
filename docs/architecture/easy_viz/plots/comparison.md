@@ -17,13 +17,14 @@ every option between them.
    and the options carry `barmode="group"` from then on; drawing never stacks, 100 %
    normalises or moves labels inside for a single series.
 1. **`_check_options`**: everything that needs no data. Choices, the query-shape
-   rules (`y` needed unless `agg="count"`; a list `y` and `color` conflict; `color`
-   can't be `x` itself), then one
+   rules (`_shared.check_shape`: `y` needed unless `agg="count"`; a list `y` and
+   `color` conflict; `color` can't be `x` itself), then one
    helper per option group (`_check_statistics`, `_check_ordering_and_layout`,
    `_check_labels`, `_check_colour`). Conflicts raise; options with no effect in the
    current mode warn (`_validate.warn_no_effect`). "Changed from its default" is read
-   against the module constants (`CI_LEVEL`, `N_BOOT`, ...), which are also the
-   signature's defaults.
+   against the constants that are also the signature's defaults (`MIN_N`, `BARGAP`,
+   ...; the interval ones, `CI_LEVEL`, `N_BOOT`, `RANDOM_STATE`, come from
+   [`_shared`](_shared.md) with their checks).
 2. **`_data` intake**: `load`, `require_numeric`, `parse_time`. With `agg` set, the
    `hover` columns are not loaded at all (they were warned about in step 1): a
    missing value in a column that is not drawn must not drop a row the bars are
@@ -73,8 +74,9 @@ every option between them.
   total sits beyond whichever end the net value points to.
 - *Reference lines* (`avg_line`, `target`): line traces (role `reference`, groups
   `average` and `target`) on a hidden overlay axis that runs from 0 to 1 across the
-  plot. A trace on the category axis would end at the outer bars' centres; a layout
-  shape would span the plot but carry no trace role.
+  plot, drawn by `_shared.add_reference_lines` (shared with `line_plot`; see
+  [_shared.md](_shared.md) for why). Horizontal bars put the value on the x axis,
+  so their lines are vertical with the label above the plot.
 
 ## Invariants
 - The user's table is never modified; all table work is in `_data`.

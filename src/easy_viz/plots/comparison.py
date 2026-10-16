@@ -57,33 +57,38 @@ from easy_viz._validate import (
     warn_no_effect,
 )
 from easy_viz.config import get_config
+from easy_viz.plots._shared import (
+    CI_LEVEL,
+    N_BOOT,
+    RANDOM_STATE,
+    ReferenceLine,
+    add_reference_lines,
+    check_color_map,
+    check_interval_options,
+    check_series_colours,
+    check_shape,
+    check_value_format,
+    conflict,
+    value_label,
+    warn_hover_with_agg,
+)
+from easy_viz.plots._shared import names as _names
+from easy_viz.plots._shared import plotly_list as _plotly_list
+from easy_viz.plots._shared import text as _text
 from easy_viz.stats.intervals import CiMethod, Interval, RandomState, interval
-from easy_viz.theme._color import ACCEPTED_FORMS, is_color
 from easy_viz.theme.registry import ThemeName, resolve_theme
 from easy_viz.theme.theme import Theme
 
 FUNC = "bar_plot"
 
-# Option defaults, named so the no-effect warnings can tell a changed value.
-CI_LEVEL = 0.95
-N_BOOT = 2000
-RANDOM_STATE = 0
+# Option defaults, named so the no-effect warnings can tell a changed value
+# (CI_LEVEL, N_BOOT and RANDOM_STATE are shared ones, from _shared).
 MIN_N = 30
 BARGAP = 0.15
 BARGROUPGAP = 0.1
 VALUE_FORMAT = None
 
 OTHER = "Other"
-
-# How an aggregate is named in titles and hover text ("Mean order_value").
-_AGG_WORDS: dict[str, str] = {
-    "sum": "Total",
-    "mean": "Mean",
-    "median": "Median",
-    "min": "Min",
-    "max": "Max",
-    "count": "Count",
-}
 
 # Hatching marks bars built from too few rows: a pattern, not a colour, so it
 # reads in every colour mode and both themes.
@@ -465,13 +470,6 @@ def bar_plot(
 # --- 1. option checks ----------------------------------------------------------------
 
 
-def _names(value: str | list[str] | None) -> list[str]:
-    """Return a slot or option given as one name or several, as a list."""
-    if value is None:
-        return []
-    return [value] if isinstance(value, str) else list(value)
-
-
 def _check_options(
     o: _Options,
     *,
@@ -493,34 +491,16 @@ def _check_options(
     check_choice(FUNC, "orientation", o.orientation, Orientation)
     check_choice(FUNC, "barmode", o.barmode, BarMode)
 
-    # The query-result shape (conventions, rules 2 and 3).
-    if not o.ys and o.agg != "count":
-        raise ValueError(
-            message(
-                FUNC,
-                "y is not set",
-                "Pass the measure column as y, or use agg='count' to count rows",
-            )
-        )
-    if o.color is not None and o.color == o.x:
-        raise ValueError(
-            message(
-                FUNC,
-                f"{setting('color', o.color)} is the same column as x",
-                "color splits each category into series; to colour the bars "
-                "themselves, use highlight or color_by_value",
-            )
-        )
-    if o.wide and o.color is not None:
-        raise ValueError(
-            message(
-                FUNC,
-                f"{setting('y', y)} cannot be combined with "
-                f"{setting('color', o.color)}",
-                "Pick one shape: a list y for one column per series, or color "
-                "for series stacked in one column",
-            )
-        )
+    check_shape(
+        FUNC,
+        x=o.x,
+        y=y,
+        ys=o.ys,
+        color=o.color,
+        agg=o.agg,
+        same_column_fix="color splits each category into series; to colour the "
+        "bars themselves, use highlight or color_by_value",
+    )
 
     _check_statistics(o)
     _check_ordering_and_layout(o, width=width, height=height)
@@ -539,63 +519,23 @@ def _check_options(
 
 def _mode_conflict(param: str, value: object, other: str, other_value: object) -> str:
     """Build the standard message for two options set together."""
-    return message(
-        FUNC,
-        f"{setting(param, value)} cannot be combined with "
-        f"{setting(other, other_value)}",
-        "Remove one of them",
-    )
+    return conflict(FUNC, param, value, other, other_value)
 
 
 def _check_statistics(o: _Options) -> None:
     """Check ``ci``, its settings and the small-group flag."""
-    if o.ci is not None:
-        if o.agg not in ("mean", "median"):
-            raise ValueError(
-                message(
-                    FUNC,
-                    f"{setting('ci', o.ci)} needs agg='mean' or agg='median', got "
-                    f"{setting('agg', o.agg)}",
-                    "Pass the raw rows with agg='mean' or 'median', or remove ci",
-                )
-            )
-        if o.ci == "sem" and o.agg == "median":
-            raise ValueError(
-                message(
-                    FUNC,
-                    "ci='sem' cannot be combined with agg='median'",
-                    "The standard error describes a mean: use ci='bootstrap', or "
-                    "agg='mean'",
-                )
-            )
-        if o.barmode != "group":
-            raise ValueError(_mode_conflict("ci", o.ci, "barmode", o.barmode))
-    check_range(FUNC, "ci_level", o.ci_level, low=0, high=1, include_low=False,
-                include_high=False)  # fmt: skip
-    check_positive_int(FUNC, "n_boot", o.n_boot)
-    seed = o.random_state
-    if not (
-        seed is None
-        or isinstance(seed, np.random.Generator)
-        or (isinstance(seed, int) and not isinstance(seed, bool) and seed >= 0)
-    ):
-        raise ValueError(
-            message(
-                FUNC,
-                f"{setting('random_state', seed)} is not valid",
-                "Use a whole number of 0 or more, a numpy Generator, or None",
-            )
-        )
+    check_interval_options(
+        FUNC,
+        ci=o.ci,
+        agg=o.agg,
+        ci_level=o.ci_level,
+        n_boot=o.n_boot,
+        random_state=o.random_state,
+    )
+    if o.ci is not None and o.barmode != "group":
+        raise ValueError(_mode_conflict("ci", o.ci, "barmode", o.barmode))
     if o.min_n is not None:
         check_positive_int(FUNC, "min_n", o.min_n)
-
-    if o.ci is None and o.ci_level != CI_LEVEL:
-        warn_no_effect(FUNC, "ci_level", o.ci_level, "without ci")
-    if o.ci != "bootstrap":
-        if o.n_boot != N_BOOT:
-            warn_no_effect(FUNC, "n_boot", o.n_boot, "unless ci='bootstrap'")
-        if not (isinstance(seed, int) and seed == RANDOM_STATE):
-            warn_no_effect(FUNC, "random_state", seed, "unless ci='bootstrap'")
     if not o.flags_small_groups and o.min_n not in (MIN_N, None):
         warn_no_effect(FUNC, "min_n", o.min_n, "unless agg is 'mean' or 'median'")
 
@@ -620,26 +560,9 @@ def _check_ordering_and_layout(
 
 def _check_labels(o: _Options) -> None:
     """Check the value labels and their format."""
-    try:
-        format_value(1234.5, o.value_format)
-    except (ValueError, TypeError):
-        raise ValueError(
-            message(
-                FUNC,
-                f"{setting('value_format', o.value_format)} is not a Python "
-                "format spec",
-                "Use one such as '.3g', ',.0f' or '.1%'",
-            )
-        ) from None
+    check_value_format(FUNC, o.value_format)
     check_requires(FUNC, "show_n", o.show_n, needs="agg", needs_value=o.agg)
-    if o.hover and o.agg is not None:
-        shown = o.hover[0] if len(o.hover) == 1 else o.hover
-        warn_no_effect(
-            FUNC,
-            "hover",
-            shown,
-            f"with {setting('agg', o.agg)}: a combined bar has no single value for it",
-        )
+    warn_hover_with_agg(FUNC, o.hover, o.agg, "bar")
     if o.show_pct_of_total and o.barmode == "percent":
         raise ValueError(
             _mode_conflict("show_pct_of_total", True, "barmode", o.barmode)
@@ -670,26 +593,13 @@ def _check_colour(o: _Options, *, highlight: object) -> None:
                 "Pass a category of x as text, or a list of them",
             )
         )
-    if o.color_map is not None:
-        if not o.multi:
-            raise ValueError(
-                message(
-                    FUNC,
-                    "color_map needs several series",
-                    "Set color, or pass a list y; to colour categories, use "
-                    "highlight or color_by_value",
-                )
-            )
-        for name, value in o.color_map.items():
-            if not isinstance(value, str) or not is_color(value):
-                raise ValueError(
-                    message(
-                        FUNC,
-                        f"color_map[{name!r}]={value!r} is not a colour easy-viz "
-                        "can read",
-                        f"Use {ACCEPTED_FORMS}",
-                    )
-                )
+    check_color_map(
+        FUNC,
+        o.color_map,
+        multi=o.multi,
+        fix="Set color, or pass a list y; to colour categories, use highlight or "
+        "color_by_value",
+    )
     check_requires(
         FUNC, "colorscale", o.colorscale,
         needs="color_by_value", needs_value=o.color_by_value,
@@ -767,27 +677,14 @@ def _check_bars(o: _Options, bars: _Bars, theme: Theme, highlight: object) -> No
                     "Check the spelling against the values of x",
                 )
             )
-    if o.color_map is not None:
-        uncovered = [s for s in bars.series if s not in o.color_map]
-        if uncovered:
-            raise ValueError(
-                message(
-                    FUNC,
-                    f"color_map has no colour for {uncovered[0]!r} "
-                    f"({len(uncovered)} series without one)",
-                    "Add every series to color_map",
-                )
-            )
-    elif len(bars.series) > len(theme.colorway):
-        raise ValueError(
-            message(
-                FUNC,
-                f"{len(bars.series)} series need {len(bars.series)} colours, but "
-                f"the theme has {len(theme.colorway)}",
-                "Filter the query to fewer series, pass color_map, or use a theme "
-                "with a longer colorway",
-            )
-        )
+    check_series_colours(
+        FUNC,
+        bars.series,
+        o.color_map,
+        theme,
+        "Filter the query to fewer series, pass color_map, or use a theme with a "
+        "longer colorway",
+    )
 
 
 # --- 3. shaping ----------------------------------------------------------------------
@@ -935,21 +832,9 @@ def _sorted_naturally(values: list[object], *, reverse: bool) -> list[object]:
 # --- 4. drawing ----------------------------------------------------------------------
 
 
-def _text(value: object) -> str:
-    """Show a data value as plain text: dates without a midnight time part."""
-    strftime = getattr(value, "strftime", None)
-    if strftime is not None and hasattr(value, "hour"):
-        midnight = (value.hour, value.minute, value.second) == (0, 0, 0)  # type: ignore[attr-defined]
-        return str(strftime("%Y-%m-%d" if midnight else "%Y-%m-%d %H:%M"))
-    return str(value)
-
-
 def _value_label(o: _Options, series: str | None = None) -> str:
     """Name what the bars measure: the y column(s) with their aggregate."""
-    if o.agg == "count":
-        return _AGG_WORDS["count"]
-    names = series if series is not None else ", ".join(o.ys)
-    return names if o.agg is None else f"{_AGG_WORDS[o.agg]} {names}"
+    return value_label(o.agg, o.ys, series)
 
 
 def _auto_title(o: _Options, value_label: str) -> str:
@@ -1122,11 +1007,6 @@ def _labels_fit(
 def _axis_title(text: str) -> str | None:
     """Escape an axis title; ``""`` becomes ``None``, so Plotly reserves no space."""
     return escape_text(text) if text else None
-
-
-def _plotly_list(values: npt.NDArray[np.float64]) -> list[float | None]:
-    """NaN as None: Plotly draws no bar (and no error bar) for a missing value."""
-    return [None if math.isnan(v) else float(v) for v in values]
 
 
 def _labels(
@@ -1312,12 +1192,7 @@ def _stack_totals(
 def _add_reference_lines(
     fig: go.Figure, o: _Options, bars: _Bars, theme: Theme, horizontal: bool
 ) -> None:
-    """Add the average and target lines, as traces a role can select.
-
-    A line must span the whole category axis, which a trace on that axis can't
-    do (its ends sit at the outer bars' centres). Each line is drawn on a
-    hidden overlay axis running from 0 to 1 across the plot instead.
-    """
+    """Add the average and target lines (see ``_shared.add_reference_lines``)."""
     lines = []
     if o.avg_line:
         drawn = bars.values
@@ -1326,32 +1201,12 @@ def _add_reference_lines(
         per_bar = np.nansum(drawn, axis=0) if o.barmode == "stack" else drawn
         average = float(np.nanmean(per_bar))
         label = f"Average: {format_value(average, o.value_format)}"
-        lines.append(("average", average, label, theme.reference, "dash"))
+        lines.append(ReferenceLine("average", average, label, theme.reference, "dash"))
     if o.target is not None:
         label = f"Target: {format_value(o.target, o.value_format)}"
-        lines.append(("target", float(o.target), label, theme.reference_secondary,
-                      "dot"))  # fmt: skip
-    for group, value, label, color, dash in lines:
-        if horizontal:
-            # Above the plot area, where no bar can sit under the label.
-            where = {"x": [value, value], "y": [0, 1], "yaxis": "y2"}
-            position = "top center"
-        else:
-            where = {"x": [0, 1], "y": [value, value], "xaxis": "x2"}
-            position = "top left"
-        trace = go.Scatter(
-            mode="lines+text",
-            line={"color": color, "dash": dash},
-            text=["", label],
-            textposition=position,
-            textfont={"color": color, "size": theme.label_font_size},
-            hovertemplate=f"{label}<extra></extra>",
-            showlegend=False,
-            cliponaxis=False,
-            **where,
+        lines.append(
+            ReferenceLine(
+                "target", float(o.target), label, theme.reference_secondary, "dot"
+            )
         )
-        fig.add_trace(tag(trace, "reference", group))
-    if lines:
-        overlay = {"overlaying": "y" if horizontal else "x", "range": [0, 1],
-                   "visible": False, "fixedrange": True}  # fmt: skip
-        fig.update_layout({"yaxis2" if horizontal else "xaxis2": overlay})
+    add_reference_lines(fig, lines, theme, on="x" if horizontal else "y")

@@ -13,9 +13,9 @@ way for every function (product principle 7, "Consistency is a feature").
 
 ## How it works
 **Public API.** `__init__.py` only re-exports names and lists them in `__all__`, which
-is exactly the public API: `bar_plot`, `EasyVizWarning`, `Theme`, `get_theme`,
-`set_theme`, `get_config`, `set_config`, `save`, `save_many`. Modules whose names start with `_`
-are internal and can change freely. `py.typed` marks the package as typed, so type
+is exactly the public API: `bar_plot`, `line_plot`, `EasyVizWarning`, `Theme`,
+`get_theme`, `set_theme`, `get_config`, `set_config`, `save`, `save_many`. Modules
+whose names start with `_` are internal and can change freely. `py.typed` marks the package as typed, so type
 checkers in users' projects read its annotations.
 
 **Modules.** Small ones are described on this page; the others have their own doc.
@@ -53,9 +53,11 @@ target one series' trendline. An unknown role raises: it can only be a bug in
 easy-viz.
 
 **`_typing.py`: shared aliases.** `FrameLike` (any table narwhals accepts, eager or
-lazy), `Orientation` and `Agg`. They are plain assignments, not `type` statements, so
-`typing.get_args` returns their allowed values at runtime: `_validate.check_choice`
-reads valid options from the same alias the signature uses.
+lazy), `Agg`, and one `Literal` per string option shared or checked at runtime
+(`Orientation`, `SortBy`, `BarMode`, `TextPosition`, `ValueColoring`, `TimeGrain`,
+`MissingPeriods`, `LineShape`, `ValueLabels`). They are plain assignments, not `type`
+statements, so `typing.get_args` returns their allowed values at runtime:
+`_validate.check_choice` reads valid options from the same alias the signature uses.
 
 ## Invariants
 - `__all__` is exactly the set of public names in `__init__.py` (tested).
