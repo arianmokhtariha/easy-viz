@@ -69,7 +69,7 @@ def test_series_without_a_calendar_join_only_their_own_points() -> None:
     assert line(fig, "a").connectgaps is True
 
 
-# --- the calendar (D3) ----------------------------------------------------------------
+# --- the calendar (decision 0012) ---------------------------------------------
 
 
 def test_an_empty_period_is_a_gap_and_the_default_warns_how_many(
@@ -229,6 +229,67 @@ def test_highlight_dims_the_other_series_and_draws_them_underneath() -> None:
     with pytest.raises(ValueError, match=r"'W', which is not a series. Use one of 'N'"):
         ev.line_plot(pd.DataFrame(MONTHLY), "month", "orders", color="region",
                      highlight="W")  # fmt: skip
+
+
+def test_dimmed_series_share_one_legend_entry() -> None:
+    # 17 dimmed categories once listed 17 grey entries: the legend should name
+    # what the chart is about, and the rest as one group that toggles together.
+    df = pd.DataFrame({"x": [1, 2] * 4, "k": list("aabbccdd"), "y": [1.0] * 8})
+    fig = quiet_plot(df, "x", "y", color="k", highlight="c")
+    shown = [t.name for t in fig.data if t.showlegend is not False]
+    assert shown == ["3 others", "c"]
+    dimmed = [t for t in by_role(fig, "data") if t.meta["group"] != "c"]
+    assert {t.legendgroup for t in dimmed} == {"dimmed"}
+    assert [t.meta["group"] for t in dimmed] == ["a", "b", "d"]  # roles keep names
+    # One dimmed series keeps its own entry: there is no group to name.
+    pair = quiet_plot(df[df["k"] <= "b"], "x", "y", color="k", highlight="a")
+    assert [t.name for t in pair.data if t.showlegend is not False] == ["b", "a"]
+
+
+def test_value_labels_sit_away_from_their_line_and_from_other_lines() -> None:
+    peaks = pd.DataFrame({"x": [1, 2, 3, 4], "y": [5.0, 1.0, 6.0, 9.0]})
+    trace = line(quiet_plot(peaks, "x", "y", show_values=True))
+    # A valley's label goes below, a point above its neighbours' mean above;
+    # the ends lean inward, away from the axis line.
+    assert trace.textposition == (
+        "top right", "bottom center", "top center", "top left",
+    )  # fmt: skip
+    # Two lines ending 1 apart on a range of 100: both labels would sit above
+    # their points and overlap, so the lower one moves below.
+    close = pd.DataFrame({"x": [1, 2] * 2, "k": ["a", "a", "b", "b"],
+                          "y": [0.0, 50.0, 100.0, 51.0]})  # fmt: skip
+    fig = quiet_plot(close, "x", "y", color="k", show_values="last")
+    assert line(fig, "b").textposition[1] == "top left"
+    assert line(fig, "a").textposition[1] == "bottom left"
+
+
+def test_log_axes_label_only_some_digits_of_each_power_of_ten() -> None:
+    # Plotly labels every digit of a range spanning a few powers of ten,
+    # crowding the axis; the tick spacing follows the range instead.
+    def y_axis(top: float) -> go.layout.YAxis:
+        df = pd.DataFrame({"x": [1, 2], "y": [10.0, top]})
+        return quiet_plot(df, "x", "y", log_y=True).layout.yaxis
+
+    assert y_axis(50.0).dtick is None  # within one power of ten: Plotly's own
+    assert y_axis(5_000.0).dtick == "D2"
+    assert y_axis(1e7).dtick == 1
+
+
+def test_a_single_date_gets_a_day_either_side_and_one_tick() -> None:
+    # Plotly's own range around one date is a millisecond either side, with
+    # ticks in fractions of a second.
+    df = pd.DataFrame({"day": ["2025-04-01"], "orders": [42.0]})
+    axis = quiet_plot(df, "day", "orders").layout.xaxis
+    assert list(axis.range) == [dt.datetime(2025, 3, 31), dt.datetime(2025, 4, 2)]
+    assert axis.ticktext == ("2025-04-01",)
+
+
+def test_a_one_period_rolling_mean_is_dropped_after_its_warning() -> None:
+    df = pd.DataFrame({"x": [1, 2, 3], "y": [1.0, 2.0, 3.0]})
+    with pytest.warns(EasyVizWarning, match="rolling=1 has no effect"):
+        fig = ev.line_plot(df, "x", "y", rolling=1)
+    assert by_role(fig, "trendline") == []
+    assert "rolling" not in (fig.layout.title.subtitle.text or "")
 
 
 def test_more_coloured_series_than_the_theme_has_raise_unless_highlighted() -> None:

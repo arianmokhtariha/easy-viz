@@ -5,7 +5,8 @@ Covers: src/easy_viz/plots/timeseries.py
 ## Responsibilities
 `line_plot`: how a measure moves along an ordered axis, usually time, from any
 query-result shape. It merges the legacy `line_plot` (draws rows as given) and
-`time_series_plot` (buckets raw rows into a calendar), following plan 0004. The
+`time_series_plot` (buckets raw rows into a calendar)
+([decision 0012](../../../decisions/0012-one-line-plot-continuous-time.md)). The
 public API is its docstring, not restated here.
 
 The product rule that shapes it: **a time axis is always continuous.** A SQL
@@ -75,6 +76,21 @@ come from [`_shared`](_shared.md).
    (`legendrank` keeps the legend in series order): the band (two `ci` traces), the
    data line, then the rolling line. Then the overall line, the reference lines and
    the axes; `apply_base_layout` and `auto_height` finish it.
+   - **Value labels** are placed for all lines at once first (`_place_labels`):
+     `_label_points` picks the labelled points and a side for each, away from the
+     label's own line (above a point at or above the mean of its neighbours, below
+     otherwise; `"extremes"` puts the max above and the min below). Then, position by
+     position, higher points first, a label whose side holds another line's point or
+     an already placed label within `_LABEL_ROOM` of the value range (in powers of
+     ten on a log axis) moves to the other side, if that side is clear. `_lean` makes
+     labels at the first and last position of a time or numeric axis lean inward
+     (`"top right"`, `"bottom left"`, ...): the axis ends at those points.
+   - **Two or more dimmed series share one legend entry**, `"N others"`, shown on
+     the first one drawn: they share the legend group `"dimmed"`, so one click shows
+     or hides them all, while each keeps its series name as role group. One dimmed
+     series keeps its own entry.
+   - `rolling=1` is warned as having no effect and then dropped from the options, so
+     neither a second line nor the subtitle claims a rolling mean.
 
 **Plotly choices**
 - *Native*: `Scatter` lines with `line.shape`, `connectgaps`, `fill="tozeroy"` for
@@ -94,6 +110,14 @@ come from [`_shared`](_shared.md).
 - *Reference lines* (`avg_line`, `target`, `events`): `_shared.add_reference_lines`,
   the overlay-axis traces `bar_plot` uses: horizontal lines for values, vertical
   lines (label above the plot) for events.
+- *Log axes* (`_log_ticks`): Plotly's own tick choice labels every digit of each
+  power of ten (`dtick="D1"`) on a range of up to about three of them, which crowds
+  the axis. From one power of ten to `_LOG_DIGIT_DECADES` the axis gets
+  `dtick="D2"` (1, 2 and 5 labelled), beyond that `dtick=1` (powers of ten only);
+  under one power of ten Plotly's own ticks stay.
+- *A single date*: Plotly's autorange around one date is a millisecond either side,
+  ticked in fractions of a second. The axis gets `_SINGLE_DATE_PAD` (a day) either
+  side and one tick naming the date.
 
 ## Invariants
 - A time axis with a grain has every period from the first to the last; an empty one
@@ -122,11 +146,24 @@ come from [`_shared`](_shared.md).
   "empty period".
 - **The range slider repeats every trace**, value labels included; Plotly has no
   option to leave text out of it.
-- **Text labels are not collision-checked.** `"extremes"` puts the max above and the
-  min below its point, which keeps a series' own labels apart, but a label can touch
-  another series' line or marker when series cross at an extreme.
+- **Label placement only compares labels at the same x.** Plotly has no collision
+  check for text, and the pixel size of the plot is unknown when traces are built,
+  so `_LABEL_ROOM` estimates a label's height as a share of the value range. Three
+  or more lines within one label height at the same x can't all be separated with
+  two sides, and another line's *segment* (not its point) can still cross a label,
+  e.g. a line rising steeply into the last x next to another line's `"last"` label.
+  Labels can't move sideways or off their point (no offsets on trace text), and
+  using annotations instead would take them out of the trace roles.
 - **Event labels sit above the plot area**, at the top of the overlay axis; events
   closer together than their labels' width overlap.
+- **Reference lines are drawn over the data.** They live on overlay axes, which
+  Plotly draws above the main axes whatever the trace order, so an event line
+  crosses a spike at that date, and an average or target label at the right end can
+  sit on a line that ends near its value. A layout shape could go below the data
+  (`layer="below"`) but carries no role.
+- **The legend group of a dimmed series is `"dimmed"`, not its name.** Code that
+  finds a series' traces should use the role group (`meta["group"]`), which is
+  always the series name.
 - **Plotly pads the x autorange by 5 % for any scatter trace with markers or text**
   (plotly.js `scatter` calc: `padded` unless the trace is lines only or filled to
   y), so a monthly chart over two years would run past a "Jan 2026" tick with an

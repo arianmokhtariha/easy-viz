@@ -546,7 +546,7 @@ def period_grid(
 
     Calendar-correct: months, quarters and years step by the calendar, not
     by a fixed number of days. The plot draws one point per period, so
-    periods without a row show as gaps (D3 of plan 0004).
+    periods without a row show as gaps (decision 0012).
 
     Parameters
     ----------

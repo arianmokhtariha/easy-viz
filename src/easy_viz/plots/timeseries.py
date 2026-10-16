@@ -4,7 +4,7 @@
 ``agg``, long with ``color``, wide with a list ``y``). A time axis is always
 continuous: every calendar period between the first and the last is on the
 chart, so a period without a row shows as a gap instead of being bridged
-silently (D3 of plan 0004).
+silently (decision 0012).
 
 The function runs in stages, each a helper below:
 1. ``_check_options``: option checks that need no data
@@ -107,11 +107,25 @@ _OVERALL = 2.0
 # about one default marker at the default width, so end markers clear the axis
 # line, without Plotly's 5 % strip of empty axis.
 _X_MARGIN = 0.005
+# The x range around a single date, which has no span to take a margin of.
+_SINGLE_DATE_PAD = dt.timedelta(days=1)
+# Height a value label takes above or below its point, as a share of the value
+# range: one line of label text on a plot area of default height. A label
+# whose side holds another line's point or label within this moves across.
+_LABEL_ROOM = 0.06
+# Log axes: Plotly labels every digit of each power of ten (2, 3, ... 9) when
+# a range spans up to about three of them, which crowds the axis. From one
+# power of ten up to this many, only 1, 2 and 5 are labelled; beyond, only
+# the powers of ten.
+_LOG_DIGIT_DECADES = 4.0
 
-# Legend names of the overall line (D8): with agg it is the aggregate over all
-# rows; without, only the mean of the series' values, and named so.
+# Legend names of the overall line (decision 0012): with agg it is the aggregate
+# over all rows; without, only the mean of the series' values, and named so.
 OVERALL = "Overall"
 MEAN_OF_SERIES = "Mean of series"
+# Legend group of the dimmed series under highlight: one entry for all of
+# them ("16 others"), so the legend lists what the chart is about.
+_DIMMED_GROUP = "dimmed"
 
 # Words for a calendar grain: the subtitle's adjective, and how the unified
 # hover names a period (d3 time format, as Plotly reads it).
@@ -314,7 +328,8 @@ or None, default "auto"
         Draw the trailing mean over this many periods (or points, without a
         calendar) over each line; the raw line stays, faded. On a calendar the
         window counts periods, so ``rolling=7`` on daily data is always 7 days,
-        also across empty ones. Conflicts with ``ci``.
+        also across empty ones. ``1`` is the value itself: it is ignored,
+        with a warning. Conflicts with ``ci``.
     show_markers : bool or None, default None
         Markers on the data points. ``None``: markers when no series has more
         than 30 points. Without markers, a point between two empty periods
@@ -327,8 +342,10 @@ or None, default "auto"
         Write values on the line the reader follows (the rolling mean when
         ``rolling`` is set): ``True`` on every point, ``"last"`` on the last,
         ``"ends"`` on the first and last, ``"extremes"`` on each series' max
-        (above) and min (below). With ``highlight``, only the highlighted
-        series are labelled. The hover always has every value.
+        (above) and min (below). A label sits on the side of its point away
+        from its line, and moves across when another line's point or label
+        is close beside it at the same ``x``. With ``highlight``, only the
+        highlighted series are labelled. The hover always has every value.
     value_format : str or None, default None
         Python format spec for values in labels, hover and reference lines,
         e.g. ``",.0f"`` or ``".1%"``. ``None``: four significant digits with
@@ -337,7 +354,8 @@ or None, default "auto"
         Series to emphasise (``color`` values or ``y`` columns): they keep
         their colours and are drawn slightly heavier, on top; the others use
         the theme's dimmed colour. Needs several series. Dimmed series need no
-        colour of their own, so it also makes charts with many series possible.
+        colour of their own, so it also makes charts with many series possible;
+        two or more share one legend entry ("16 others").
     color_map : mapping of str to str or None, default None
         A fixed colour per series (``color`` value or ``y`` column), so a
         series looks the same in every chart. Hex, ``rgb()`` or ``rgba()``;
@@ -462,6 +480,10 @@ or None, default "auto"
         y_title=y_title,
     )
     _check_options(o, y=y, highlight=highlight, width=width, height=height)
+    if o.rolling == 1:
+        # Warned as having no effect, so it has none: no second line, no
+        # "1-day rolling mean" in the subtitle.
+        o = replace(o, rolling=None)
     chosen = resolve_theme(theme, caller=FUNC)
     # With agg, hover has no effect: it isn't loaded, so its nulls can't drop rows
     # that the lines are computed from (only used columns count, rule 7).
@@ -1060,8 +1082,17 @@ def _draw(
         else o.show_markers
     )
     coloured = _coloured(o, lines)
-    entries = len(lines.series) + (1 if lines.overall is not None else 0)
-    legend = entries > 1
+    dimmed_count = len(lines.series) - len(coloured)
+    # Two or more dimmed series share one legend entry ("16 others"), shown on
+    # the first one drawn: the legend lists what the chart is about.
+    grouped = dimmed_count > 1
+    entries = len(coloured) + (1 if grouped else dimmed_count)
+    legend = entries + (1 if lines.overall is not None else 0) > 1
+    followed = lines.rolled if lines.rolled is not None else lines.values
+    # Labels go on the line the reader follows; dimmed series carry none.
+    labels = _place_labels(
+        o, lines, followed, [name in coloured for name in lines.series]
+    )
 
     # Dimmed series first, so the highlighted ones are drawn over them.
     order = sorted(range(len(lines.series)), key=lambda s: lines.series[s] in coloured)
@@ -1081,11 +1112,19 @@ def _draw(
         style = _Style(
             colour, width, markers and not dimmed, connect, group, legend_name, s + 1
         )
+        if dimmed and grouped:
+            first = s == order[0]
+            style = replace(
+                style,
+                name=f"{dimmed_count} others" if first else legend_name,
+                legend_group=_DIMMED_GROUP,
+                # After the highlighted series, before the overall line.
+                rank=len(lines.series) + 1,
+                in_legend=first,
+            )
         if lines.low is not None and lines.high is not None:
             for trace in _band(o, lines, s, xs, style):
                 fig.add_trace(trace)
-        followed = lines.rolled[s] if lines.rolled is not None else lines.values[s]
-        labelled = o.show_values is not False and not (o.highlight and dimmed)
         smoothed = lines.rolled is not None
         fig.add_trace(
             _line(
@@ -1095,18 +1134,19 @@ def _draw(
                 role="data",
                 hovers=_hovers(o, lines, s),
                 faded=smoothed,
-                labels=labelled and not smoothed,
+                labels=None if smoothed else labels[s],
             )
         )  # fmt: skip
         if lines.rolled is not None:
             window = escape_text(f"{_series_name(o, lines, s)}, {_window(o, lines)}")
+            if not (dimmed and grouped):
+                style = replace(style, name=window)
             fig.add_trace(
                 _line(
-                    o, lines, xs, followed,
-                    replace(style, name=window), theme,
+                    o, lines, xs, followed[s], style, theme,
                     role="trendline",
-                    hovers=_simple_hovers(o, window, followed),
-                    labels=labelled,
+                    hovers=_simple_hovers(o, window, followed[s]),
+                    labels=labels[s],
                 )
             )  # fmt: skip
 
@@ -1116,14 +1156,14 @@ def _draw(
             label = f"{label}, {_window(o, lines)}"
         style = _Style(
             theme.neutral, theme.line_width * _OVERALL, markers, connect,
-            "overall", label, len(lines.series) + 1,
+            "overall", label, len(lines.series) + 2,
         )  # fmt: skip
         fig.add_trace(
             _line(
                 o, lines, xs, lines.overall, style, theme,
                 role="reference",
                 hovers=_simple_hovers(o, label, lines.overall),
-                labels=False,
+                labels=None,
             )
         )  # fmt: skip
 
@@ -1159,7 +1199,7 @@ def _draw(
     )
     fig.update_layout(
         xaxis=_x_axis(o, lines, xs, [value for value, _ in events_at]),
-        yaxis=_y_axis(o),
+        yaxis=_y_axis(o, lines),
         hovermode="x unified",
         showlegend=legend,
         legend={
@@ -1173,6 +1213,14 @@ def _draw(
 
 
 @dataclass(frozen=True, slots=True)
+class _Labels:
+    """The value labels of one line: text and Plotly text position per point."""
+
+    texts: list[str]  # "" where a point carries no label
+    positions: list[str]
+
+
+@dataclass(frozen=True, slots=True)
 class _Style:
     """How one line is drawn, shared by its band, raw line and rolling line."""
 
@@ -1180,9 +1228,11 @@ class _Style:
     width: float
     markers: bool
     connect: bool
-    group: str | None  # the role group and legend group: the series name
+    group: str | None  # the role group: the series name
     name: str  # escaped legend name
-    rank: int  # legend position: series order, the overall line last
+    rank: int  # legend position: series order, the dimmed group, then overall
+    legend_group: str | None = None  # None: the role group
+    in_legend: bool = True  # False for dimmed series behind their group's entry
 
 
 def _line(
@@ -1196,7 +1246,7 @@ def _line(
     role: Role,
     hovers: list[str],
     faded: bool = False,
-    labels: bool,
+    labels: _Labels | None,
 ) -> go.Scatter:
     """One line trace, with its markers, value labels and area fill."""
     present = ~np.isnan(values)
@@ -1216,15 +1266,13 @@ def _line(
         mode.append("markers")
         marker["size"] = [theme.marker_size if a else 0 for a in isolated]
     trace_text: dict[str, Any] = {}
-    if labels:
-        texts, positions = _value_labels(o, values)
-        if any(texts):
-            mode.append("text")
-            trace_text = {
-                "text": texts,
-                "textposition": positions,
-                "textfont": {"size": theme.label_font_size, "color": style.colour},
-            }
+    if labels is not None and any(labels.texts):
+        mode.append("text")
+        trace_text = {
+            "text": labels.texts,
+            "textposition": labels.positions,
+            "textfont": {"size": theme.label_font_size, "color": style.colour},
+        }
     fill: dict[str, Any] = {}
     # The area goes under the line the reader follows: the rolling mean, if any.
     if o.fill_area and role != "reference" and not faded:
@@ -1238,9 +1286,9 @@ def _line(
         marker=marker,
         connectgaps=style.connect,
         opacity=_FADED if faded else None,
-        legendgroup=style.group,
+        legendgroup=style.legend_group or style.group,
         legendrank=style.rank,
-        showlegend=not faded,
+        showlegend=style.in_legend and not faded,
         hovertext=hovers,
         hovertemplate="%{hovertext}<extra></extra>",
         cliponaxis=False,
@@ -1269,7 +1317,7 @@ def _band(
             fill=fill,
             fillcolor=with_alpha(style.colour, _BAND_ALPHA),
             connectgaps=style.connect,
-            legendgroup=style.group,
+            legendgroup=style.legend_group or style.group,
             showlegend=False,
             hoverinfo="skip",
         )
@@ -1277,29 +1325,134 @@ def _band(
     return traces
 
 
-def _value_labels(
+def _place_labels(
+    o: _Options,
+    lines: _Lines,
+    followed: npt.NDArray[np.float64],
+    labelled: Sequence[bool],
+) -> list[_Labels | None]:
+    """Choose which points of each line carry a value label, and where.
+
+    Each label first takes the side of its point away from its own line
+    (``_label_points``). Labels are then kept apart from the other lines at
+    the same x: a label whose side holds another line's point, or a label
+    already placed, within ``_LABEL_ROOM`` of the value range moves to the
+    other side of its point, if that side is clear. Higher points are placed
+    first, so of two close labels the upper one goes above and the lower one
+    below. Labels at different x are not compared: Plotly has no collision
+    check for text, and a sideways clash needs points closer than a label's
+    width.
+    """
+    if o.show_values is False:
+        return [None] * len(followed)
+    # Room is measured on the axis scale: in powers of ten on a log axis
+    # (log_y has already refused values of 0 or less).
+    scaled = np.log10(followed) if o.log_y else followed
+    drawn = scaled
+    if lines.overall is not None:
+        overall = np.log10(lines.overall) if o.log_y else lines.overall
+        drawn = np.vstack([scaled, overall])
+    finite = drawn[np.isfinite(drawn)]
+    room = _LABEL_ROOM * float(finite.max() - finite.min()) if finite.size else 0.0
+
+    wanted = [
+        (s, p, above)
+        for s, row in enumerate(scaled)
+        if labelled[s]
+        for p, above in _label_points(o, row)
+    ]
+    taken: dict[int, list[tuple[float, float]]] = {}
+    sides: dict[tuple[int, int], bool] = {}
+    for s, p, above in sorted(wanted, key=lambda w: (w[1], -scaled[w[0], w[1]])):
+        value = float(scaled[s, p])
+        others = [float(v) for k, v in enumerate(drawn[:, p]) if k != s]
+        here = taken.setdefault(p, [])
+        if not _clear(value, above, room, others, here) and _clear(
+            value, not above, room, others, here
+        ):
+            above = not above
+        sides[s, p] = above
+        here.append(_label_span(value, above, room))
+
+    result: list[_Labels | None] = []
+    for s, row in enumerate(followed):
+        if not labelled[s]:
+            result.append(None)
+            continue
+        texts = [""] * len(row)
+        positions = ["top center"] * len(row)
+        for (k, p), above in sides.items():
+            if k == s:
+                texts[p] = format_value(float(row[p]), o.value_format)
+                positions[p] = f"{'top' if above else 'bottom'} {_lean(lines, p)}"
+        result.append(_Labels(texts, positions))
+    return result
+
+
+def _label_span(value: float, above: bool, room: float) -> tuple[float, float]:
+    """Return the stretch of the value axis a label takes beside its point."""
+    return (value, value + room) if above else (value - room, value)
+
+
+def _clear(
+    value: float,
+    above: bool,
+    room: float,
+    others: Sequence[float],
+    taken: Sequence[tuple[float, float]],
+) -> bool:
+    """Whether a label's side holds no other line's point and no other label."""
+    low, high = _label_span(value, above, room)
+    if any(low < v < high for v in others if math.isfinite(v)):
+        return False
+    return all(high <= a or low >= b for a, b in taken)
+
+
+def _label_points(
     o: _Options, values: npt.NDArray[np.float64]
-) -> tuple[list[str], list[str]]:
-    """Which points of a line get their value written, and where."""
-    texts = [""] * len(values)
-    positions = ["top center"] * len(values)
-    present = np.flatnonzero(~np.isnan(values))
+) -> list[tuple[int, bool]]:
+    """Return the labelled points of one line, each with whether it sits above.
+
+    ``"extremes"``: the max above its point, the min below. Otherwise a label
+    sits on the side away from its line: above a point at or above the mean
+    of its neighbours (a peak, or a bend that opens upwards), below one under
+    it. An end point has one neighbour, and the label goes away from it.
+    """
+    present = np.flatnonzero(np.isfinite(values))
     if not present.size:
-        return texts, positions
-    if o.show_values is True:
-        chosen: list[int] = [int(i) for i in present]
-    elif o.show_values == "last":
-        chosen = [int(present[-1])]
-    elif o.show_values == "ends":
-        chosen = [int(present[0]), int(present[-1])]
-    else:  # extremes: the max above its point, the min below
+        return []
+    if o.show_values == "extremes":
         high = int(present[np.argmax(values[present])])
         low = int(present[np.argmin(values[present])])
-        chosen = [high, low] if high != low else [high]
-        positions[low] = "bottom center" if high != low else positions[low]
+        return [(high, True)] if high == low else [(high, True), (low, False)]
+    if o.show_values == "last":
+        chosen = [len(present) - 1]
+    elif o.show_values == "ends":
+        chosen = sorted({0, len(present) - 1})
+    else:  # True: every point
+        chosen = list(range(len(present)))
+    points = []
     for i in chosen:
-        texts[i] = format_value(float(values[i]), o.value_format)
-    return texts, positions
+        neighbours = [
+            values[present[j]] for j in (i - 1, i + 1) if 0 <= j < len(present)
+        ]
+        mean = float(np.mean(neighbours)) if neighbours else -math.inf
+        points.append((int(present[i]), bool(values[present[i]] >= mean)))
+    return points
+
+
+def _lean(lines: _Lines, p: int) -> str:
+    """Where a label leans: inward at the ends of a time or numeric axis.
+
+    The axis starts and ends at the first and last point (``_x_range``), so
+    a centred label there would spill over the axis line. A text axis keeps
+    half a category of room at each end.
+    """
+    if lines.kind == "categorical" or len(lines.xs) == 1:
+        return "center"
+    if p == 0:
+        return "right"
+    return "left" if p == len(lines.xs) - 1 else "center"
 
 
 def _hovers(o: _Options, lines: _Lines, s: int) -> list[str]:
@@ -1359,10 +1512,21 @@ def _x_axis(
         axis["type"] = "date"
         if lines.grain is not None:
             axis["unifiedhovertitle"] = {"text": _PERIOD_HOVER[lines.grain]}
+    elif o.log_x:
+        axis.update(type="log", **_log_ticks(np.asarray(lines.xs, dtype=float)))
     else:
-        axis["type"] = "log" if o.log_x else "linear"
+        axis["type"] = "linear"
     if lines.kind != "categorical" and len(xs) > 1:
         axis["range"] = _x_range(o, [*xs, *events])
+    elif lines.kind == "temporal":
+        # One date: Plotly's autorange is a millisecond either side, ticked in
+        # fractions of a second. A day either side, with the date as its tick.
+        (only,) = lines.xs
+        axis.update(
+            range=[only - _SINGLE_DATE_PAD, only + _SINGLE_DATE_PAD],  # type: ignore[operator]
+            tickvals=[only],
+            ticktext=[escape_text(text(only))],
+        )
     if o.rangeslider:
         # The slider autoranges on its own, with the same 5 % padding: give it
         # the axis range, so its window starts out covering the whole slider.
@@ -1391,12 +1555,31 @@ def _x_range(o: _Options, xs: list[object]) -> list[object]:
     return [low - pad, high + pad]
 
 
-def _y_axis(o: _Options) -> dict[str, Any]:
+def _log_ticks(values: npt.NDArray[np.float64]) -> dict[str, Any]:
+    """Tick spacing of a log axis over ``values``, so its labels never crowd.
+
+    Plotly picks it from the axis length, and labels every digit (2, 3, ...
+    9) of a range spanning up to about three powers of ten. Below one power
+    of ten its own ticks are fine; from one to ``_LOG_DIGIT_DECADES`` only 1,
+    2 and 5 are labelled (``"D2"``), beyond that only the powers of ten.
+    """
+    finite = values[np.isfinite(values) & (values > 0)]
+    if not finite.size:
+        return {}
+    decades = math.log10(float(finite.max())) - math.log10(float(finite.min()))
+    if decades < 1:
+        return {}
+    return {"dtick": "D2" if decades <= _LOG_DIGIT_DECADES else 1}
+
+
+def _y_axis(o: _Options, lines: _Lines) -> dict[str, Any]:
     """Build the value axis: title, log scale, the labels' format if d3 shares it."""
     title = o.y_title if o.y_title is not None else value_label(o.agg, o.ys)
     axis: dict[str, Any] = {"title": {"text": _axis_title(title)}}
     if o.log_y:
-        axis["type"] = "log"
+        drawn = [lines.values, lines.rolled, lines.overall, lines.low, lines.high]
+        values = np.concatenate([d.ravel() for d in drawn if d is not None])
+        axis.update(type="log", **_log_ticks(values))
     tickformat = d3_format(o.value_format)
     if tickformat is not None:
         axis["tickformat"] = tickformat

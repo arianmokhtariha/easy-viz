@@ -6,11 +6,28 @@ Where easy-viz stands. Updated in the PR that changes it.
 - Nothing in progress.
 
 ## Next
-- Port `line_plot` with its gallery notebook (its own plan), then release 0.1.0.
+- Release 0.1.0 (`bar_plot` and `line_plot`).
 
 ## Later
 - Small multiples (`facet_col`, `facet_row`) for every plot function, in one plan
   (decided with plan 0003)
+- A second y axis for measures on different scales (orders and conversion rate
+  on one chart); the product manager will shape it (2026-10-16)
+- Found while porting `line_plot`:
+  - stacked areas, indexing series to 100 for growth comparisons, shaded periods
+    (a range of x, such as a campaign), and the low-n flag (`min_n`) on points
+  - linear trendlines with r² and p belong with the relationship plots
+  - value labels that never cross another line: today a label moves away from
+    nearby points but can still sit on another line's segment, and three lines
+    within one label height can't all be separated
+  - reference, event and overall lines are drawn above the data (overlay-axis
+    traces, shared with `bar_plot`); drawing them underneath needs a technique
+    that keeps their trace roles
+  - the range slider repeats value labels (no Plotly option to leave them out)
+  - a repeated-x message after bucketing shows the date with its midnight time
+    (`2024-01-01 00:00:00`)
+- Theme sample sheet: the series panel's legend sits beside the highlight panel,
+  and the polar panel's radial ticks sit on its fills
 - Found while porting `bar_plot`:
   - `highlight` for several series and on a time axis (today one series, no dates)
   - reference-line labels that avoid value labels at the same height
@@ -38,6 +55,13 @@ Where easy-viz stands. Updated in the PR that changes it.
   GitHub release and publishes to PyPI through trusted publishing
 
 ## Done
+- `line_plot` (plan 0004): one line function for every query shape, merging the
+  original `line_plot` and `time_series_plot`
+  ([decision 0012](docs/decisions/0012-one-line-plot-continuous-time.md)); a time
+  axis that is always continuous, with the calendar grain read from the data and
+  empty periods shown; rolling means over calendar periods, confidence bands, an
+  overall line that uses every row; line width and marker size in the theme; its
+  gallery notebook, with the price-rise story as the first README image
 - `bar_plot` (plan 0003): the first plot function, merging the original
   `bar_plot` and `grouped_bar_plot`
   ([decision 0010](docs/decisions/0010-one-bar-plot.md)); the first statistics
