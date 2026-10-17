@@ -21,7 +21,7 @@ One name per concept, in every function.
 | `orientation` | `Literal["vertical", "horizontal"]` |
 | `log_x`, `log_y` | log axes |
 | `value_format` | Python format spec (`".3g"`, `",.0f"`), never d3 format; `None` = automatic (`862.3k`, `1.082M`, [decision 0011](decisions/0011-automatic-value-format.md)) |
-| `show_values`, `text_position` | write values on the marks; where (`"outside"`, `"inside"`, `"auto"`) |
+| `show_values`, `text_position` | write values on the marks; where (`"outside"`, `"inside"`, `"auto"`). On lines, `show_values` also picks which points: `"last"`, `"ends"` (first and last), `"extremes"` (each series' max and min) |
 | `show_pct_of_total`, `show_n` | add each mark's share of the total, or its row count, to its label |
 | `other` | with `top_n`, fold the cut categories into one "Other" category |
 | `ci`, `ci_level` | confidence interval method (`"bootstrap"`, `"sem"`) and level |
@@ -30,6 +30,15 @@ One name per concept, in every function.
 | `barmode`, `bargap`, `bargroupgap` | how bar series share a category (`"group"`, `"stack"`, `"percent"`); gaps as fractions |
 | `color_by_value`, `colorscale`, `color_midpoint` | colour marks by their own value (`"sequential"`, `"diverging"`, `"sign"`); the scale; where the colour turns |
 | `avg_line`, `target` | reference lines at the average and at a target value |
+| `overall_line` | one extra line: all series together at each `x` (the same `agg` over every row; the mean of the series when pre-aggregated) |
+| `events` | `dict` of `x` value → label: labelled vertical lines at those points (a launch, a price change) |
+| `time_grain` | calendar period of a time `x` (`"hour"`, `"day"`, `"week"`, `"month"`, `"quarter"`, `"year"`; weeks start on Monday): dates are bucketed into it and every period is on the axis. `"auto"` reads it from the data; `None` = no calendar |
+| `missing_periods` | how a calendar period without a row is drawn: `"gap"`, `"zero"`, `"connect"`; `None` = gaps, with a warning |
+| `rolling` | window of a trailing rolling mean drawn over each line: periods on a calendar, points without one |
+| `show_markers` | markers on the data points; `None` = automatic (on short series) |
+| `line_shape` | how a line runs between points: `"linear"`, `"spline"`, or steps (`"hv"`, `"vh"`, `"hvh"`, `"vhv"`) |
+| `fill_area` | shade the area between each line and zero |
+| `rangeslider` | a range slider under the `x` axis, to zoom into a stretch |
 | `x_title`, `y_title` | axis titles of the `x` and `y` slots, wherever `orientation` draws them |
 | `color_map` | `dict[str, str]`: fixed colour per series (a `color` value or a `y` column), identical across charts |
 | `highlight` | category or categories to emphasise; the rest use the theme's dimmed colour |

@@ -1,11 +1,12 @@
 """Render one sample sheet per built-in theme to ``.review/theme/<name>.png``.
 
 Every theme role appears on the sheet, so a single look shows whether a theme
-works: title and subtitle (with ``$`` signs), the colorway, legend, reference
-lines, the "Other" and dimmed colours, both label-carrying heatmap scales, both
-marker scales, the severity ramp, positive/negative, overlay boxes and a polar
-panel. The sheet is built from raw Plotly plus the shared layout helpers, the same
-ones every plot uses, so it shows the theme on its own, apart from any plot.
+works: title and subtitle (with ``$`` signs), the colorway, series line width and
+markers, legend, reference lines, the "Other" and dimmed colours, both
+label-carrying heatmap scales, both marker scales, the severity ramp,
+positive/negative, overlay boxes and a polar panel. The sheet is built from raw
+Plotly plus the shared layout helpers, the same ones every plot uses, so it shows
+the theme on its own, apart from any plot.
 
 Run with ``uv run python scripts/render_theme_samples.py``.
 """
@@ -27,7 +28,7 @@ OUT_DIR = Path(__file__).resolve().parents[1] / ".review" / "theme"
 N_COLS = 3
 PANELS = (
     "Colorway, 'Other' and a reference line",
-    "Series with a legend",
+    "Series: line width, markers, legend",
     "Highlight: one series, the rest dimmed",
     "Diverging scale with cell labels",
     "Sequential scale with cell labels",
@@ -80,7 +81,7 @@ def _add_bars(fig: go.Figure, theme: Theme) -> None:
 
 
 def _add_series(fig: go.Figure, theme: Theme) -> None:
-    """Panel 2: four series with a legend, a neutral 'overall' line, a median."""
+    """Panel 2: four series with markers and a legend, an 'overall' line, a median."""
     series = [
         _wave(len(MONTHS), phase, 20 + 6 * k) for k, phase in enumerate((0, 1, 2, 3))
     ]
@@ -91,8 +92,11 @@ def _add_series(fig: go.Figure, theme: Theme) -> None:
                 y=values,
                 name=f"Region {k + 1}",
                 mode="lines+markers",
-                line={"color": theme.colorway[k], "width": 2},
-                marker={"size": 6, "line": {"color": theme.mark_outline, "width": 1}},
+                line={"color": theme.colorway[k], "width": theme.line_width},
+                marker={
+                    "size": theme.marker_size,
+                    "line": {"color": theme.mark_outline, "width": 1},
+                },
             ),
             row=1,
             col=2,
@@ -119,7 +123,7 @@ def _add_series(fig: go.Figure, theme: Theme) -> None:
 
 
 def _add_highlight(fig: go.Figure, theme: Theme) -> None:
-    """Panel 3: one emphasised series against dimmed ones."""
+    """Panel 3: one emphasised series, one px wider, against dimmed ones."""
     for k in range(5):
         fig.add_trace(
             go.Scatter(
@@ -128,7 +132,7 @@ def _add_highlight(fig: go.Figure, theme: Theme) -> None:
                 mode="lines",
                 line={
                     "color": theme.colorway[0] if k == 2 else theme.dimmed,
-                    "width": 3 if k == 2 else 2,
+                    "width": theme.line_width + 1 if k == 2 else theme.line_width,
                 },
                 showlegend=False,
             ),

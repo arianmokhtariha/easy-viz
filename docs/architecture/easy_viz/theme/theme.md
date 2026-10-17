@@ -24,6 +24,10 @@ Covers: src/easy_viz/theme/theme.py
   `severity_scale`.
 - Fonts: `font_family`, `font_size`, `title_font_size`, `subtitle_font_size`,
   `label_font_size`.
+- Data-series sizes in px: `line_width` (the lines that draw series) and
+  `marker_size` (markers on their points). One size across every chart is what a
+  theme is for, so they are theme values, not plot options; one chart's size is
+  changed on the returned figure (`fig.update_traces(line_width=4)`).
 - Layout in px: `title_top_px`, `title_gap_px` (the title block), `row_gap_px`,
   `col_gap_px`, `row_plot_px` (subplot grids, read by
   [`grid_geometry`](../_layout.md)).
@@ -62,7 +66,10 @@ from holding them all). The template is built from scratch, not layered on `plot
 - heatmap defaults: `sequential_scale` and cell labels in `cell_text`
 
 Margins and figure size are not in the template: they depend on the figure, and are
-set by [`apply_base_layout`](../_layout.md).
+set by [`apply_base_layout`](../_layout.md). Nor are `line_width` and `marker_size`:
+a template default for scatter traces would also reach scatter traces that aren't
+data series (`bar_plot` draws its reference lines and stack totals as scatter
+traces), so a plot sets them on each data trace, as it does `label_font_size`.
 
 ## Invariants
 - A `Theme` that exists is valid: there is no way to build one that fails later in a

@@ -46,6 +46,7 @@ pattern defines its metrics precisely.
 | `break-post-aov-ratio` | 4. Seasonality and a break | daily_metrics | Average order value, Apr-Oct 2025 over Apr-Oct 2024 | 1.11 |
 | `longtail-top3-revenue-share` | 5. Long-tail categories | orders, products | Revenue share of the 3 biggest categories | 0.54 |
 | `longtail-categories-below-2pct` | 5. Long-tail categories | orders, products | Categories with less than 2 % of revenue | 9 |
+| `longtail-gifts-weeks-without-orders` | 5. Long-tail categories | orders, products | Weeks (Monday to Sunday) of the 105 with no Gifts order | 10 |
 | `blocks-median-within-abs-r` | 6. Correlated blocks | customers | Median abs. Pearson r of column pairs inside a block | 0.67 |
 | `blocks-min-within-abs-r` | 6. Correlated blocks | customers | Lowest abs. Pearson r of a column pair inside a block | 0.57 |
 | `blocks-max-between-abs-r` | 6. Correlated blocks | customers | Highest abs. Pearson r of a column pair from two blocks | 0.05 |
@@ -230,10 +231,16 @@ categories both land on their target.
 **Strength:** Furniture (22 %), Kitchen (18 %) and Bedding (14 %) bring 54 % of
 revenue. Nine of the 18 categories each bring less than 2 %: Tableware, Textiles,
 Wall art, Office, Candles, Plants, Kids, Pet and Gifts. Together they make about 10 %.
+The smallest categories don't even sell every week: Gifts, with 305 orders in two
+years, has no order at all in 10 of the 105 weeks (Monday to Sunday) the data spans.
 
 **How to reveal it:** a bar chart of all 18 categories ends in a row of slivers that
 are hard to read. Keeping the six largest (`top_n=6`) and folding the rest into one
 "Other" bar is the honest summary of the tail.
+
+Over time, a weekly `GROUP BY` of Gifts orders returns no row for the 10 empty weeks,
+and a plain line chart bridges them as if sales went on. A line chart that keeps
+every week on its axis shows them as gaps, or as zero orders.
 
 ## 6. Correlated variable blocks
 

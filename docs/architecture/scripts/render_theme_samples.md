@@ -12,8 +12,10 @@ built-in theme with raw Plotly and the shared layout helpers
 ([`grid_geometry`, `apply_base_layout`](../easy_viz/_layout.md)), the same ones plots
 use. Each panel exercises theme roles:
 - the full colorway, the "Other" bucket and a reference line with a call-out box
-- series with a legend, a `neutral` overall line and a `reference_secondary` line
-- `highlight`: one series in colour, the rest `dimmed`
+- series drawn at `line_width` with `marker_size` markers, a legend, a `neutral`
+  overall line and a `reference_secondary` line
+- `highlight`: one series in colour and one px wider than `line_width` (the original
+  module's emphasis), the rest `dimmed`
 - heatmaps with cell labels on `diverging_scale` and on `sequential_scale`
 - markers on `marker_diverging_scale` with its colour bar
 - bars coloured by value on `marker_sequential_scale`, the smallest one included
