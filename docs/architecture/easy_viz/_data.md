@@ -121,13 +121,18 @@ Jan/Apr/Jul/Oct 1.
   `end`, both included, as Python `datetime`s. Both must already be period starts
   (from `truncate_time`), `start` first; otherwise it raises.
 
-Two small helpers serve a plot that places dates itself (`line_plot`):
+Three small helpers serve a plot that places dates itself (`line_plot`):
 - **`time_array(frame, column)`** returns a temporal column as naive
   `datetime64[us]` (missing as NaT, an aware column in its wall-clock time): the exit
   to numpy for dates, as `to_float_array` is for numbers.
 - **`floor_time(value, grain)`** gives the start of the period containing one naive
   `datetime`, with the same calendar as `truncate_time` (e.g. to tell which period of
   the chart a date given as an option falls in).
+- **`utc_offset_changes(frame, column)`** tells whether a time-zone-aware column's
+  values lie on both sides of a change of the zone's UTC offset (a daylight-saving
+  change): the wall-clock time minus the UTC instant (`dt.convert_time_zone("UTC")`)
+  takes more than one value. A naive column gives `False`. A plot that places points
+  finer than a day uses it to refuse such data (see Pitfalls).
 
 All of these share one calendar, in numpy: a value's period number is its cast to the
 grain's numpy unit (`datetime64[h]`, `[D]`, `[M]`, `[Y]`), shifted and divided by
@@ -205,6 +210,12 @@ give identical results.
   twice at a daylight-saving change, and the period labels are local dates anyway.
   (Aware values in a pandas `object` column never get here: they stay categorical,
   see above.)
+- **Wall-clock hours are not instants across a daylight-saving change.** In autumn
+  the wall clock repeats an hour, so two rows land on one hour (bucketed together,
+  or one overwriting the other); in spring it skips one, which a calendar would list
+  as an empty hour. Local days, weeks and months stay right. So positions finer than
+  a day on an aware column are only safe while `utc_offset_changes` is `False`;
+  `line_plot` raises otherwise ([timeseries.md](plots/timeseries.md)).
 - **numpy's datetime casts floor, which the calendar relies on.** `1969-12-31 18:00`
   cast to `datetime64[D]` is 1969-12-31, and `//` floors negative numbers too, so
   dates before 1970 land in the right period. Truncating toward zero (C-style

@@ -4,8 +4,10 @@ import warnings
 
 import pandas as pd
 import plotly.graph_objects as go
+import polars as pl
+import pyarrow as pa
 import pytest
-from conftest import MakeFrame
+from conftest import BACKENDS, Backend, MakeFrame
 
 import easy_viz as ev
 from easy_viz._warnings import EasyVizWarning
@@ -144,6 +146,37 @@ def test_the_x_axis_ends_at_the_data_not_at_plotlys_padding() -> None:
     assert numeric.layout.xaxis.range == pytest.approx((0.99, 3.01))
     slider = quiet_plot(df, "m", "v", rangeslider=True).layout.xaxis
     assert slider.rangeslider.range == slider.range
+
+
+def amsterdam_hours(start: str, backend: Backend) -> object:
+    """Six hourly Europe/Amsterdam rows from ``start``, in the given backend."""
+    hours = pd.date_range(start, periods=6, freq="h", tz="Europe/Amsterdam")
+    df = pd.DataFrame({"at": hours, "v": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]})
+    if backend == "polars":
+        return pl.from_pandas(df)
+    if backend == "pyarrow":
+        return pa.Table.from_pandas(df, preserve_index=False)
+    return df
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_hours_across_a_daylight_saving_change_raise(backend: Backend) -> None:
+    # 2024-10-27 repeats 02:00 (two rows, one wall-clock position: one value
+    # lost or summed); 2024-03-31 skips 02:00 (an hour that never existed would
+    # be drawn as an empty one).
+    for start in ("2024-10-27 00:00", "2024-03-31 00:00"):
+        df = amsterdam_hours(start, backend)
+        for grain in ("auto", "hour", None):
+            with pytest.raises(ValueError) as error:
+                ev.line_plot(df, "at", "v", agg="sum", time_grain=grain)  # type: ignore[arg-type]
+            text = str(error.value)
+            assert "x='at'" in text and "time_grain=" in text, text
+            assert "daylight-saving" in text and "UTC" in text, text
+        # Local calendar days stay right across the change.
+        assert len(line(quiet_plot(df, "at", "v", agg="sum", time_grain="day")).y) == 1
+    # Aware hours that don't cross a change draw as usual.
+    calm = quiet_plot(amsterdam_hours("2024-10-26 00:00", backend), "at", "v")
+    assert list(line(calm).y) == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 
 
 def test_a_grain_needs_a_time_x() -> None:
@@ -300,6 +333,21 @@ def test_more_coloured_series_than_the_theme_has_raise_unless_highlighted() -> N
     quiet_plot(df, "x", "y", color="k", highlight="s3")  # dimmed need no colour
 
 
+def test_a_color_map_covers_more_series_than_the_theme_has_colours() -> None:
+    # The message above suggests color_map: it must then be enough, with no
+    # colorway colour looked up for a series it covers.
+    n = len(get_theme().colorway) + 2
+    names = [f"s{i}" for i in range(n)]
+    df = pd.DataFrame({"x": [1] * n, "k": names, "y": [1.0] * n})
+    mapped = {name: f"rgb({i}, 0, 0)" for i, name in enumerate(names)}
+    fig = quiet_plot(df, "x", "y", color="k", color_map=mapped)
+    assert {t.name: t.line.color for t in by_role(fig, "data")} == mapped
+    highlighted = quiet_plot(df, "x", "y", color="k", color_map=mapped,
+                             highlight=names[1:])  # fmt: skip
+    colours = {t.name: t.line.color for t in by_role(highlighted, "data")}
+    assert colours == {**mapped, "s0": get_theme().dimmed}
+
+
 def test_markers_show_on_short_lines_and_on_points_between_gaps() -> None:
     short = pd.DataFrame({"x": range(30), "y": [1.0] * 30})
     assert "markers" in line(quiet_plot(short, "x", "y")).mode
@@ -344,6 +392,19 @@ def test_log_y_refuses_values_of_zero_or_less_and_counts_them() -> None:
         ev.line_plot(df, "x", "y", log_y=True)
 
 
+def test_log_y_refuses_a_band_reaching_zero_rather_than_clipping_it() -> None:
+    # Every mean is above 0, but the standard-error band of 0.1 and 10 reaches
+    # about -4.7: on a log axis its wall would drop to the floor, silently.
+    df = pd.DataFrame({"x": [1, 1, 2, 2], "y": [0.1, 10.0, 5.0, 6.0]})
+    with pytest.raises(ValueError) as error:
+        ev.line_plot(df, "x", "y", agg="mean", ci="sem", log_y=True)
+    text = str(error.value)
+    assert "1 confidence-band end at or below 0" in text
+    assert "log_y=True" in text and "ci='sem'" in text
+    ev.line_plot(df.assign(y=[9.0, 10.0, 5.0, 6.0]), "x", "y", agg="mean", ci="sem",
+                 log_y=True)  # fmt: skip
+
+
 def test_titles_and_hover_name_the_measure_and_escape_dollars() -> None:
     df = pd.DataFrame({"m": ["2025-01-01", "2025-02-01"], "$rev": [1.0, 2.0]})
     fig = quiet_plot(df, "m", "$rev", agg="sum", y_title="in $ and $")
@@ -368,6 +429,7 @@ CONFLICTS = [
     ({"agg": "median", "ci": "sem"}, ["ci='sem'", "agg='median'"]),
     ({"agg": "mean", "ci": "sem", "rolling": 3}, ["ci='sem'", "rolling=3"]),
     ({"fill_area": True, "log_y": True}, ["fill_area=True", "log_y=True"]),
+    ({"target": 0.0, "log_y": True}, ["target=0.0", "log_y=True"]),
     ({"missing_periods": "zero", "log_y": True},
      ["missing_periods='zero'", "log_y=True"]),
     ({"overall_line": True}, ["overall_line=True", "color"]),

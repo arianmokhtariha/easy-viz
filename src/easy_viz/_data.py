@@ -408,6 +408,25 @@ def time_array(frame: Frame, column: str) -> npt.NDArray[np.datetime64]:
     return _wall_clock(frame, column)
 
 
+def utc_offset_changes(frame: Frame, column: str) -> bool:
+    """Whether a time-zone-aware column's values lie on both sides of an offset change.
+
+    That is a daylight-saving change (or any change of the zone's UTC offset)
+    within the data: there the wall clock repeats an hour (autumn) or skips one
+    (spring), so wall-clock positions finer than a day stop matching instants.
+    A naive column, or one whose values all share one offset, gives ``False``.
+    """
+    series = frame[column]
+    dtype = series.dtype
+    if not isinstance(dtype, nw.Datetime) or dtype.time_zone is None:
+        return False
+    utc = series.dt.convert_time_zone("UTC").dt.replace_time_zone(None)
+    instants = np.asarray(utc.to_numpy(), dtype=_TIME_UNIT)
+    present = ~np.isnat(instants)
+    offsets = _wall_clock(frame, column)[present] - instants[present]
+    return int(np.unique(offsets).size) > 1
+
+
 def floor_time(value: dt.datetime, grain: TimeGrain) -> dt.datetime:
     """Return the start of the ``grain`` period that contains ``value``.
 

@@ -26,7 +26,7 @@ come from [`_shared`](_shared.md).
    (booleans, `show_markers`, `show_values`, `value_format`, `fill_area`/`log_y` and
    `missing_periods="zero"`/`log_y`), `_check_colour` (`highlight` needs several
    series, `color_map`), `_check_lines_options` (`overall_line` needs `color` and
-   refuses a list `y`, `target`, the shape of `events`).
+   refuses a list `y`, `target` (above 0 with `log_y`), the shape of `events`).
 2. **`_data` intake**: `load` (hover not loaded with `agg`, as in `bar_plot`),
    `require_numeric`, `parse_time`, then `column_kind` gives the x kind.
    `_check_x_kind` checks what depends on it: `log_x` needs numbers, `rangeslider` a
@@ -37,8 +37,11 @@ come from [`_shared`](_shared.md).
    dates sit on no grid). With `"auto"` and a single distinct date there is no
    calendar at all, as with `None`: one date shows no step, and `infer_grain` would
    answer its coarsest grain ("yearly" for one month start), a claim the data can't
-   back. `_data.truncate_time` always runs when there is a grain: idempotent on dates
-   already on the grain, it buckets raw timestamps.
+   back. `_check_daylight_saving` then refuses a time-zone-aware x placed finer than a
+   day (an hourly grain, or no grain with times other than midnight) whose values lie
+   on both sides of a daylight-saving change (`_data.utc_offset_changes`; see
+   Pitfalls). `_data.truncate_time` always runs when there is a grain: idempotent on
+   dates already on the grain, it buckets raw timestamps.
 4. **`_shape`** builds `_Lines`: a series × position grid of values (NaN = no point)
    on one x axis shared by every series.
    - `_data.aggregate` gives one value per (x, series), or raises naming `agg` when an
@@ -65,8 +68,10 @@ come from [`_shared`](_shared.md).
      then masked to NaN wherever the line itself has no value. Without a calendar the
      window counts the series' own points. With `"zero"`, the zeros count.
 5. **`_check_lines`**: `highlight` names a series, colours (`_shared.check_series_colours`:
-   only the series drawn in colour count, so dimmed ones need none), and `log_y`
-   values above 0 (counted in the message).
+   only the series drawn in colour count, so dimmed ones need none), and with `log_y`
+   every drawn value above 0, then every lower band end above 0 (each counted in the
+   message). A band is refused, never clipped: a clipped band would misstate the
+   interval.
 6. The **empty-period warning** (only when `missing_periods` was left at `None`), and
    **`_event_positions`**: each `events` key read as the x kind (ISO strings and
    dates as naive datetimes, numbers, or a category's text) and checked against the
@@ -164,6 +169,16 @@ come from [`_shared`](_shared.md).
 - **The legend group of a dimmed series is `"dimmed"`, not its name.** Code that
   finds a series' traces should use the role group (`meta["group"]`), which is
   always the series name.
+- **Hours of a time-zone-aware x are wall-clock hours.** Positions come from the
+  local time (`_data.time_array`), so across a daylight-saving change two autumn rows
+  at 02:00 share one position (one value silently lost, or summed into one point by
+  an hourly grain) and the skipped spring hour would show as an empty period. That is
+  why such data raises unless the positions are a day or coarser, where local
+  calendar days are right; the fix is UTC (or a fixed offset) in the query.
+- **`color_map` is read before the colorway.** With `color_map` covering every
+  coloured series, there may be more of them than the theme has colours
+  (`check_series_colours` allows it), so the colorway is indexed only for a series
+  the map doesn't cover (`_series_colour`; `bar_plot`'s `_marker` does the same).
 - **Plotly pads the x autorange by 5 % for any scatter trace with markers or text**
   (plotly.js `scatter` calc: `padded` unless the trace is lines only or filled to
   y), so a monthly chart over two years would run past a "Jan 2026" tick with an

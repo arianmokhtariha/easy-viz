@@ -304,7 +304,11 @@ or None, default "auto"
         whose step is the smallest gap between them; dates on no regular grid
         (raw timestamps, every other day) raise and ask for a grain; a single
         date shows no step, so it gets no calendar. ``None`` draws the points
-        as they are, with no calendar. A grain other than
+        as they are, with no calendar. Points are placed by wall-clock time, so
+        a time-zone-aware ``x`` with hours (an hourly grain, or ``None`` with
+        times other than midnight) whose span crosses a daylight-saving change
+        raises: convert it to UTC in the query, or use ``"day"`` or coarser.
+        A grain other than
         ``"auto"`` needs a time ``x``.
     missing_periods : {"gap", "zero", "connect"} or None, default None
         How a period of the calendar without a row is drawn: ``"gap"`` breaks
@@ -380,8 +384,10 @@ or None, default "auto"
     log_x : bool, default False
         Log-scale the x axis. Needs a numeric ``x``.
     log_y : bool, default False
-        Log-scale the y axis. Every value drawn must be above 0. Conflicts with
-        ``fill_area`` and ``missing_periods="zero"``.
+        Log-scale the y axis. Every value drawn must be above 0, and so must
+        both ends of a ``ci`` band (a band is never clipped: that would
+        misstate the interval) and a ``target``. Conflicts with ``fill_area``
+        and ``missing_periods="zero"``.
     rangeslider : bool, default False
         A range slider under the x axis, to zoom into a stretch of a long
         series. Needs a time or numeric ``x``.
@@ -509,6 +515,8 @@ or None, default "auto"
     elif kind == "temporal" and o.time_grain is not None:
         # Not "auto" (the branch above): a grain, checked in _check_options.
         grain = cast(TimeGrain, o.time_grain)
+    if kind == "temporal":
+        _check_daylight_saving(frame, o, grain)
     if grain is not None:
         # Idempotent on dates already on the grain; buckets raw timestamps.
         frame = _data.truncate_time(frame, x, grain)
@@ -688,6 +696,15 @@ def _check_lines_options(o: _Options) -> None:
     )
     if o.target is not None:
         check_range(FUNC, "target", o.target)
+        if o.log_y and o.target <= 0:
+            raise ValueError(
+                message(
+                    FUNC,
+                    f"{setting('target', o.target)} cannot be drawn with "
+                    "log_y=True: a log axis has no 0 or negative values",
+                    "Remove log_y, or set a target above 0",
+                )
+            )
     if o.events is not None:
         if not isinstance(o.events, Mapping):
             raise TypeError(
@@ -791,6 +808,64 @@ def _check_lines(o: _Options, lines: _Lines, theme: Theme, highlight: object) ->
                     "Remove log_y, or filter those rows in the query",
                 )
             )
+        # A band's lower ends can reach 0 or below while every value is above
+        # it (a wide interval of a small group). Clipping them would misstate
+        # the interval, so it is refused.
+        if lines.low is not None:
+            ends = int(np.sum(lines.low[~np.isnan(lines.low)] <= 0))
+            if ends:
+                raise ValueError(
+                    message(
+                        FUNC,
+                        f"log_y=True cannot draw {ends} confidence-band "
+                        f"end{'s' if ends > 1 else ''} at or below 0 "
+                        f"({setting('ci', o.ci)}): a log axis has no 0 or "
+                        "negative values",
+                        "Remove log_y to see the whole band, or remove ci",
+                    )
+                )
+
+
+def _check_daylight_saving(
+    frame: _data.Frame, o: _Options, grain: TimeGrain | None
+) -> None:
+    """Raise when hours of a time-zone-aware x cross a daylight-saving change.
+
+    Points are placed by wall-clock time. Across a change the wall clock
+    repeats an hour (autumn: two rows on one position, one silently lost or
+    summed) or skips one (spring: an hour that never existed shown as empty).
+    Positions of a day or coarser are local calendar days, which stay right.
+    """
+    if grain is not None:
+        below_a_day = grain == "hour"
+    else:
+        moments = _data.time_array(frame, o.x)
+        moments = moments[~np.isnat(moments)]
+        below_a_day = bool(np.any(moments != moments.astype("datetime64[D]")))
+    if not below_a_day or not _data.utc_offset_changes(frame, o.x):
+        return
+    zone = frame.schema[o.x].time_zone  # type: ignore[attr-defined]
+    raise ValueError(
+        message(
+            FUNC,
+            f"{setting('x', o.x)} is in time zone {zone!r} and its hours cross a "
+            f"daylight-saving change, so with {setting('time_grain', o.time_grain)} "
+            "an hour repeats or is skipped on the wall clock",
+            "Convert the column to UTC (or a fixed offset) in the query, or set "
+            "time_grain='day' or coarser",
+        )
+    )
+
+
+def _series_colour(o: _Options, name: str, coloured: list[str], theme: Theme) -> str:
+    """Colour of a series drawn in colour: its ``color_map`` entry, else colorway.
+
+    ``color_map`` is read first: with it, there can be more coloured series
+    than the colorway has colours (``_check_lines`` allows that).
+    """
+    if o.color_map is not None and name in o.color_map:
+        return o.color_map[name]
+    return theme.colorway[coloured.index(name)]
 
 
 def _single_date(frame: _data.Frame, column: str) -> bool:
@@ -1101,9 +1176,7 @@ def _draw(
         name = lines.series[s]
         dimmed = name not in coloured
         colour = (
-            theme.dimmed
-            if dimmed
-            else (o.color_map or {}).get(name, theme.colorway[coloured.index(name)])
+            _series_colour(o, name, coloured, theme) if not dimmed else theme.dimmed
         )
         width = theme.line_width * (_EMPHASIS if o.highlight and not dimmed else 1)
         group = name if o.multi else None

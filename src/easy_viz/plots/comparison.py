@@ -1108,8 +1108,9 @@ def _marker(o: _Options, bars: _Bars, s: int, theme: Theme) -> dict[str, Any]:
         }
     elif len(bars.series) > 1:
         name = bars.series[s]
+        # color_map first: with it, series may outnumber the colorway's colours.
         color_map = o.color_map or {}
-        marker = {"color": color_map.get(name, theme.colorway[s])}
+        marker = {"color": color_map[name] if name in color_map else theme.colorway[s]}
     else:
         emphasis = set(o.highlight)
         colors = []
