@@ -322,7 +322,7 @@ def test_options_without_effect_warn(options: dict[str, object], param: str) -> 
 
 def test_the_default_call_warns_nothing() -> None:
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", EasyVizWarning)
         ev.bar_plot(pd.DataFrame(SALES), "region", "revenue")
 
 

@@ -32,9 +32,14 @@ def line(fig: go.Figure, group: str | None = None) -> go.Scatter:
 
 
 def quiet_plot(*args: object, **kwargs: object) -> go.Figure:
-    """Call line_plot, failing on any warning."""
+    """Call line_plot, failing on any easy-viz warning.
+
+    Only ``EasyVizWarning``: other libraries' notices are not line_plot's. With
+    the lowest narwhals (2.8), every pyarrow sort raises pyarrow's own
+    deprecation ``FutureWarning``, which must not fail these tests.
+    """
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", ev.EasyVizWarning)
         return ev.line_plot(*args, **kwargs)  # type: ignore[arg-type]
 
 
