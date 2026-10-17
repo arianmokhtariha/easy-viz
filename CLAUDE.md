@@ -190,7 +190,8 @@ layout helpers, gallery notebooks) goes through this loop before it is reported 
 
 1. **Render:** run the gallery build script for the affected notebooks. It executes
    them and saves every image output to `.review/<notebook>/<cell>.png`. For figures
-   outside the gallery, export to PNG with `fig.write_image()`.
+   outside the gallery, export to PNG with `fig.write_image()` into the session's
+   scratchpad, never into `.review/` (see step 6).
 2. **Look:** read every affected PNG (the Read tool shows images). Reading a notebook
    file directly omits its image outputs, so always read the extracted PNGs.
 3. **Judge:** each image against this defect list:
@@ -207,7 +208,13 @@ layout helpers, gallery notebooks) goes through this loop before it is reported 
    same defect.
 5. **Repeat** from step 1 until a full pass finds no defects. If a defect can't be
    fixed (e.g. a Plotly limitation), report it with the reason.
-6. **Show:** for meaningful visual changes, keep before/after PNGs in `.review/`.
+6. **Show, then clean up:** for meaningful visual changes, keep before/after PNGs in
+   `.review/before_after/` (`<topic>_before.png`, `<topic>_after.png`). Empty that
+   folder when a new task's review starts, so it never mixes tasks. `.review/`
+   (gitignored) holds nothing else beyond the script outputs `.review/<notebook>/`
+   and `.review/theme/`, which each run replaces. Before reporting, delete any
+   other folder or file the task created there: a stale render looks like a
+   current one to the next reader.
    - In the end-of-task message: give their paths, so the product manager can open
      them.
    - In the PR body: describe the visual change in words. Executed gallery
