@@ -1,17 +1,18 @@
 # Statistics (`stats/`)
 
-Covers: src/easy_viz/stats/__init__.py, src/easy_viz/stats/intervals.py
+Covers: src/easy_viz/stats/__init__.py, src/easy_viz/stats/intervals.py, src/easy_viz/stats/smoothing.py
 
 ## Responsibilities
 The numbers behind the plots, kept apart from drawing: a plot function validates,
 prepares its data, then asks `stats/` for anything statistical. Pure functions only
 (numpy in, numpy or small frozen dataclasses out), never Plotly, so the statistics
-can be tested against scipy and reused by any plot ([the stats guide](../../../../src/easy_viz/stats/CLAUDE.md)).
+can be tested against a reference (scipy, pandas) and reused by any plot ([the stats guide](../../../../src/easy_viz/stats/CLAUDE.md)).
 Nothing here is public.
 
 ## How it works
 **`intervals.py`: confidence interval of a group's mean or median**, ported from the
-legacy `_agg_ci` with the same behaviour. Used by `bar_plot`'s error bars.
+legacy `_agg_ci` with the same behaviour. Used by `bar_plot`'s error bars and
+`line_plot`'s confidence bands.
 - `interval(values, *, statistic, method, level, n_boot, random_state) -> Interval`
   (`estimate`, `low`, `high`, `n`).
 - `method="bootstrap"`: the *basic* bootstrap, `2 * estimate - quantile`, from
@@ -25,13 +26,30 @@ legacy `_agg_ci` with the same behaviour. Used by `bar_plot`'s error bars.
   value gives the estimate with NaN bounds (the legacy rule: an interval needs two
   values); identical values give a zero-width interval. `sem` with the median raises.
 
+**`smoothing.py`: the trailing rolling mean of a series**, behind `line_plot`'s
+`rolling`.
+- `rolling_mean(values, window) -> ndarray`: at each position, the mean of the
+  values among the last `window` positions, the current one included. The semantics
+  are exactly pandas' `Series.rolling(window, min_periods=1).mean()`, the number an
+  analyst would compute in a notebook, without a pandas dependency.
+- The window counts **positions**, not values: NaN values inside it are skipped, and
+  the result is NaN only where every position in the window is NaN. So a caller that
+  wants a window in calendar time (7 days, not 7 rows) passes the series on its full
+  period grid, with NaN for empty periods.
+- Vectorised: running sums and running counts of the finite values (with a leading
+  0), differenced at the window's ends, then sum / count where the count is above 0.
+- Edge cases: an empty array gives an empty array; `window=1` returns the values;
+  a window longer than the series gives the expanding mean; infinities count as
+  missing, as pandas 3 does. `window` below 1 (or not a whole number) raises
+  `ValueError`.
+
 ## Invariants
 - No module imports `plotly` or `easy_viz.plots` (tested by `tests/test_layering.py`).
 - Randomness comes only from `np.random.default_rng(random_state)`. An int seed makes
   each call independent of every other call, so adding a bar never moves another
   bar's interval.
-- Every function is tested against a reference (scipy) plus its documented edge
-  cases (`tests/stats/`).
+- Every function is tested against a reference (scipy for intervals, pandas for the
+  rolling mean) plus its documented edge cases (`tests/stats/`).
 
 ## Pitfalls
 - **Resamples are drawn in batches** below `_MAX_BATCH_VALUES` (one million floats),
@@ -44,3 +62,10 @@ legacy `_agg_ci` with the same behaviour. Used by `bar_plot`'s error bars.
 - **The bootstrap of 2 or 3 values is itself unreliable**: its interval comes out
   narrow because few distinct resamples exist. That's why `bar_plot` flags small
   groups (`min_n`) as well as drawing intervals.
+- **Running-sum differences lose precision on long series** of large values (pandas
+  uses compensated sums instead). The reference test checks 2,000 lognormal values
+  with gaps against pandas at `rtol=1e-9`; the measured error is about 3e-13, far
+  below anything a chart shows.
+- **Older pandas handles infinities differently** (it can return `inf` or NaN where
+  pandas 3 skips them), so the infinity case is tested against hand-written numbers,
+  not pandas: the `lowest` CI job runs pandas 2.2.

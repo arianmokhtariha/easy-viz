@@ -14,6 +14,8 @@ sizes from the [theme](../theme/index.md), the title block from
 | Module | Doc | Functions |
 |---|---|---|
 | `comparison.py` | [comparison.md](comparison.md) | `bar_plot` |
+| `timeseries.py` | [timeseries.md](timeseries.md) | `line_plot` |
+| `_shared.py` | [_shared.md](_shared.md) | none (internal): checks, labels and reference lines several functions share |
 
 ## How it works
 Every function follows the same stages, in this order, so a reader who knows one
@@ -26,6 +28,10 @@ knows them all:
    from `stats/`).
 4. **Drawing**: traces tagged with their role (`_meta.tag`), coloured from theme
    roles, then `_layout.apply_base_layout`.
+
+Whatever two functions do the same way (the interval options and their checks, the
+query-shape checks, value labels, colour-map checks, reference lines across the plot)
+lives once in [`_shared`](_shared.md), never copied.
 
 ## Invariants
 - No styling literals: no hex colours, font names or pixel sizes (tested by

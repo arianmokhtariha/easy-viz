@@ -231,6 +231,20 @@ def categories_below_2pct(t: Tables) -> float:
     return float((category_shares(t) < 0.02).sum())
 
 
+def gifts_weeks_without_orders(t: Tables) -> float:
+    """Weeks (Monday to Sunday) between the first and last order with no Gifts order."""
+    week = pl.col("order_date").dt.truncate("1w")  # polars weeks start on Monday
+    span = (week.max() - week.min()).dt.total_days() // 7 + 1
+    weeks: int = t["orders"].select(span).item()
+    gifts = (
+        t["orders"]
+        .join(t["products"], on="product_id")
+        .filter(pl.col("category") == "Gifts")
+        .select(week)["order_date"]
+    )
+    return float(weeks - gifts.n_unique())
+
+
 BLOCKS = {
     "engagement": (
         "sessions_per_month",
@@ -382,6 +396,7 @@ METRICS: dict[str, Metric] = {
     "break-post-aov-ratio": Metric(aov_ratio, TWO_DECIMALS),
     "longtail-top3-revenue-share": Metric(top3_category_share, TWO_DECIMALS),
     "longtail-categories-below-2pct": Metric(categories_below_2pct, 0),
+    "longtail-gifts-weeks-without-orders": Metric(gifts_weeks_without_orders, 0),
     "blocks-median-within-abs-r": Metric(blocks_median_within, TWO_DECIMALS),
     "blocks-min-within-abs-r": Metric(blocks_min_within, TWO_DECIMALS),
     "blocks-max-between-abs-r": Metric(blocks_max_between, TWO_DECIMALS),

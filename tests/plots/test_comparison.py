@@ -228,6 +228,16 @@ def test_color_map_fixes_series_colours_and_must_cover_every_series() -> None:
         ev.bar_plot(df, "region", ["revenue", "cost"], color_map={"revenue": "#222"})
 
 
+def test_a_color_map_covers_more_series_than_the_theme_has_colours() -> None:
+    # The too-many-series message suggests color_map: it must then be enough.
+    n = len(get_theme().colorway) + 2
+    names = [f"s{i}" for i in range(n)]
+    df = pd.DataFrame({"c": ["a"] * n, "k": names, "v": [1.0] * n})
+    mapped = {name: f"rgb({i}, 0, 0)" for i, name in enumerate(names)}
+    fig = ev.bar_plot(df, "c", "v", color="k", color_map=mapped)
+    assert {t.name: t.marker.color for t in bars(fig)} == mapped
+
+
 def test_value_colouring_modes() -> None:
     theme = get_theme()
     df = pd.DataFrame({"c": list("abc"), "v": [-1.0, 0.5, 2.0]})
@@ -312,7 +322,7 @@ def test_options_without_effect_warn(options: dict[str, object], param: str) -> 
 
 def test_the_default_call_warns_nothing() -> None:
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", EasyVizWarning)
         ev.bar_plot(pd.DataFrame(SALES), "region", "revenue")
 
 

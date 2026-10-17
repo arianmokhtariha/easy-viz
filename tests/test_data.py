@@ -14,12 +14,17 @@ from easy_viz._data import (
     aggregate,
     column_kind,
     drop_nulls,
+    floor_time,
     group_arrays,
+    infer_grain,
     load,
     parse_time,
+    period_grid,
     require_numeric,
     to_float_array,
+    truncate_time,
 )
+from easy_viz._typing import TimeGrain
 from easy_viz._warnings import EasyVizWarning
 
 SALES = {
@@ -315,6 +320,274 @@ def test_plain_strings_and_other_dtypes_pass_through_silently(
         assert parse_time(frame, "f", "x", "region") is frame
         assert parse_time(frame, "f", "x", "revenue") is frame
         assert parse_time(frame, "f", "x", None) is frame
+
+
+# --- calendar periods ---------------------------------------------------------
+
+
+def _moments(values: list[object]) -> list[dt.datetime | None]:
+    """Backend values as plain datetimes (pandas Timestamps, NaT -> None)."""
+    # pandas' Timestamp and NaT both subclass datetime.
+    return [
+        pd.Timestamp(v).to_pydatetime()
+        if isinstance(v, dt.datetime) and v is not pd.NaT
+        else None
+        for v in values
+    ]
+
+
+def _d(text: str) -> dt.datetime:
+    return dt.datetime.fromisoformat(text)
+
+
+# 2025-12-31 is a Wednesday, so its week starts in the previous year; 2024-02-29
+# is a leap day; 1969-12-31 checks that periods floor (not round toward zero)
+# before 1970, day 0 of numpy's calendar.
+TIMESTAMPS = [
+    "2025-12-31 15:45:10",
+    "2024-02-29 23:59:59",
+    "2026-01-01 00:00:00",
+    "2025-05-18 08:30:00",  # a Sunday: its week started six days earlier
+    "1969-12-31 18:00:00",
+]
+TRUNCATED: dict[str, list[str]] = {
+    "hour": [
+        "2025-12-31 15:00",
+        "2024-02-29 23:00",
+        "2026-01-01",
+        "2025-05-18 08:00",
+        "1969-12-31 18:00",
+    ],
+    "day": ["2025-12-31", "2024-02-29", "2026-01-01", "2025-05-18", "1969-12-31"],
+    "week": ["2025-12-29", "2024-02-26", "2025-12-29", "2025-05-12", "1969-12-29"],
+    "month": ["2025-12-01", "2024-02-01", "2026-01-01", "2025-05-01", "1969-12-01"],
+    "quarter": ["2025-10-01", "2024-01-01", "2026-01-01", "2025-04-01", "1969-10-01"],
+    "year": ["2025-01-01", "2024-01-01", "2026-01-01", "2025-01-01", "1969-01-01"],
+}
+
+
+@pytest.mark.parametrize("grain", list(TRUNCATED))
+def test_truncate_time_floors_to_the_period_start(
+    make_frame: MakeFrame, grain: TimeGrain
+) -> None:
+    native = make_frame({"t": [*map(_d, TIMESTAMPS), None], "v": [1, 2, 3, 4, 5, 6]})
+    before = nw.from_native(native, eager_only=True).rows()
+    frame = truncate_time(nw.from_native(native, eager_only=True), "t", grain)
+    expected = [_d(text) for text in TRUNCATED[grain]]
+    assert _moments(frame["t"].to_list()) == [*expected, None]
+    assert frame.schema["t"] == nw.Datetime("us")
+    assert frame.columns == ["t", "v"]
+    # The user's table is untouched.
+    assert nw.from_native(native, eager_only=True).rows() == before
+
+
+ZONED = [
+    dt.datetime(2026, 3, 1, 15, tzinfo=dt.UTC),
+    dt.datetime(2026, 3, 2, 15, tzinfo=dt.UTC),
+    dt.datetime(2026, 3, 4, 15, tzinfo=dt.UTC),
+]
+
+
+@pytest.mark.parametrize(
+    "native",
+    [
+        pd.DataFrame({"t": pd.Series(ZONED).dt.tz_convert("Asia/Tokyo")}),
+        pl.DataFrame({"t": ZONED}).with_columns(
+            pl.col("t").dt.convert_time_zone("Asia/Tokyo")
+        ),
+        pa.table(
+            {
+                "t": pa.array(ZONED, pa.timestamp("us", tz="UTC")).cast(
+                    pa.timestamp("us", tz="Asia/Tokyo")
+                )
+            }
+        ),
+    ],
+    ids=["pandas", "polars", "pyarrow"],
+)
+def test_time_zone_aware_columns_use_their_own_wall_clock(native: object) -> None:
+    # 15:00 UTC is midnight in Tokyo: daily data there, but 15:00 every day in UTC
+    # (which would read as hours, 24 apart, and raise).
+    frame = load(native, "line_plot", {"x": "t"})  # type: ignore[arg-type]
+    assert infer_grain(frame, "line_plot", "t") == "day"
+    out = truncate_time(frame, "t", "day")
+    assert _moments(out["t"].to_list()) == [
+        _d("2026-03-02"),
+        _d("2026-03-03"),
+        _d("2026-03-05"),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("values", "grain"),
+    [
+        # Each one has a period missing inside, and a repeat or two out of order.
+        (["2026-01-05 03:00", "2026-01-05 00:00", "2026-01-05 01:00"], "hour"),
+        (["2026-01-08", "2026-01-05", "2026-01-06", "2026-01-05"], "day"),
+        # Mondays across a year end.
+        (["2025-12-22", "2025-12-29", "2026-01-12"], "week"),
+        # Jan and Apr are quarter starts, Feb is not; March is missing.
+        (["2026-01-01", "2026-02-01", "2026-04-01", "2026-04-01"], "month"),
+        (["2025-10-01", "2026-01-01", "2026-07-01"], "quarter"),
+        (["2022-01-01", "2023-01-01", "2025-01-01"], "year"),
+        # A single value: the coarsest grain it starts.
+        (["2026-01-05 10:00"], "hour"),
+        (["2026-01-05"], "week"),
+        (["2026-04-01"], "quarter"),
+    ],
+)
+def test_infer_grain_reads_the_calendar_grain(
+    make_frame: MakeFrame, values: list[str], grain: TimeGrain
+) -> None:
+    frame = load(make_frame({"t": [*map(_d, values), None]}), "f", {"x": "t"})
+    assert infer_grain(frame, "f", "t") == grain
+
+
+def test_raw_timestamps_raise_naming_time_grain(make_frame: MakeFrame) -> None:
+    native = make_frame({"t": [_d("2026-01-05 14:02"), _d("2026-01-05 10:37:12")]})
+    frame = load(native, "line_plot", {"x": "t"})
+    with pytest.raises(ValueError) as error:
+        infer_grain(frame, "line_plot", "t")
+    assert str(error.value) == (
+        "line_plot: time_grain='auto' finds no calendar grain in 't': "
+        "2026-01-05 10:37:12 is not on a whole hour. Set time_grain to bucket the "
+        "dates (e.g. time_grain='day'), or time_grain=None to draw the points as "
+        "they are."
+    )
+
+
+@pytest.mark.parametrize(
+    ("values", "found"),
+    [
+        (
+            ["2026-01-01", "2026-01-05", "2026-01-03"],
+            "day starts, but no two are one day apart (closest: 2026-01-01 and "
+            "2026-01-03). Set time_grain to bucket them (e.g. time_grain='week')",
+        ),
+        (
+            ["2026-01-05", "2026-01-19", "2026-02-02"],
+            "week starts, but no two are one week apart (closest: 2026-01-05 and "
+            "2026-01-19). Set time_grain to bucket them (e.g. time_grain='month')",
+        ),
+        # Daily data with one stray noon value sits on hours, 12 apart.
+        (
+            ["2026-01-05", "2026-01-05 12:00", "2026-01-06"],
+            "hour starts, but no two are one hour apart (closest: 2026-01-05 and "
+            "2026-01-05 12:00:00)",
+        ),
+        (
+            ["2020-01-01", "2022-01-01"],
+            "year starts, but no two are one year apart (closest: 2020-01-01 and "
+            "2022-01-01). Set time_grain=None to draw the points as they are.",
+        ),
+    ],
+)
+def test_sparse_dates_raise_naming_time_grain(
+    make_frame: MakeFrame, values: list[str], found: str
+) -> None:
+    frame = load(make_frame({"t": [_d(v) for v in values]}), "line_plot", {"x": "t"})
+    with pytest.raises(ValueError) as error:
+        infer_grain(frame, "line_plot", "t")
+    text = str(error.value)
+    assert text.startswith(
+        "line_plot: time_grain='auto' finds no calendar grain in 't': its dates "
+        "fall on "
+    )
+    assert found in text
+    assert text.endswith("time_grain=None to draw the points as they are.")
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "grain", "expected"),
+    [
+        (
+            "2025-11-01",
+            "2026-02-01",
+            "month",
+            ["2025-11-01", "2025-12-01", "2026-01-01", "2026-02-01"],
+        ),
+        (
+            "2025-07-01",
+            "2026-04-01",
+            "quarter",
+            ["2025-07-01", "2025-10-01", "2026-01-01", "2026-04-01"],
+        ),
+        (
+            "2025-12-22",
+            "2026-01-05",
+            "week",
+            ["2025-12-22", "2025-12-29", "2026-01-05"],
+        ),
+        (
+            "2026-01-01 22:00",
+            "2026-01-02 01:00",
+            "hour",
+            ["2026-01-01 22:00", "2026-01-01 23:00", "2026-01-02", "2026-01-02 01:00"],
+        ),
+        (
+            "2023-01-01",
+            "2025-01-01",
+            "year",
+            ["2023-01-01", "2024-01-01", "2025-01-01"],
+        ),
+        ("2026-03-01", "2026-03-01", "month", ["2026-03-01"]),
+    ],
+)
+def test_period_grid_steps_by_the_calendar(
+    start: str, end: str, grain: TimeGrain, expected: list[str]
+) -> None:
+    assert period_grid(_d(start), _d(end), grain) == [_d(e) for e in expected]
+
+
+def test_period_grid_counts_leap_days() -> None:
+    leap = period_grid(_d("2024-01-01"), _d("2024-12-31"), "day")
+    assert len(leap) == 366
+    assert _d("2024-02-29") in leap
+    assert len(period_grid(_d("2023-01-01"), _d("2023-12-31"), "day")) == 365
+
+
+@pytest.mark.parametrize(
+    ("value", "grain", "start"),
+    [
+        ("2025-01-01 13:45", "week", "2024-12-30"),  # the week starts in 2024
+        ("2025-05-31 23:59", "quarter", "2025-04-01"),
+        ("2024-02-29 08:00", "day", "2024-02-29"),
+    ],
+)
+def test_floor_time_uses_the_same_calendar_as_truncate_time(
+    value: str, grain: TimeGrain, start: str
+) -> None:
+    assert floor_time(_d(value), grain) == _d(start)
+
+
+@pytest.mark.parametrize(
+    ("start", "end"), [("2026-01-15", "2026-03-01"), ("2026-03-01", "2026-01-01")]
+)
+def test_period_grid_rejects_unaligned_or_reversed_bounds(start: str, end: str) -> None:
+    with pytest.raises(ValueError, match=r"^period_grid: .* are not month starts"):
+        period_grid(_d(start), _d(end), "month")
+
+
+def test_truncated_rows_fit_the_grid_and_reveal_empty_periods(
+    make_frame: MakeFrame,
+) -> None:
+    # Raw orders with no row in March: the path line_plot takes to show the gap.
+    native = make_frame(
+        {
+            "t": [
+                _d("2026-01-13 09:12"),
+                _d("2026-02-27 17:40"),
+                _d("2026-01-02 08:00"),
+                _d("2026-04-30 23:59:59"),
+            ]
+        }
+    )
+    frame = truncate_time(load(native, "f", {"x": "t"}), "t", "month")
+    assert infer_grain(frame, "f", "t") == "month"
+    present = {m for m in _moments(frame["t"].to_list()) if m is not None}
+    grid = period_grid(min(present), max(present), "month")
+    assert present <= set(grid)
+    assert [p for p in grid if p not in present] == [_d("2026-03-01")]
 
 
 # --- nulls --------------------------------------------------------------------
