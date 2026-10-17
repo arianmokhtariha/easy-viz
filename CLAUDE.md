@@ -190,8 +190,8 @@ layout helpers, gallery notebooks) goes through this loop before it is reported 
 
 1. **Render:** run the gallery build script for the affected notebooks. It executes
    them and saves every image output to `.review/<notebook>/<cell>.png`. For figures
-   outside the gallery, export to PNG with `fig.write_image()` into `.review/dev/`
-   (see step 6).
+   outside the gallery, export to PNG with `fig.write_image()` into `.review/dev/`,
+   after emptying it at the start of the loop (see the `.review/` layout below).
 2. **Look:** read every affected PNG (the Read tool shows images). Reading a notebook
    file directly omits its image outputs, so always read the extracted PNGs.
 3. **Judge:** each image against this defect list:
@@ -208,8 +208,9 @@ layout helpers, gallery notebooks) goes through this loop before it is reported 
    same defect.
 5. **Repeat** from step 1 until a full pass finds no defects. If a defect can't be
    fixed (e.g. a Plotly limitation), report it with the reason.
-6. **Show:** for meaningful visual changes, keep before/after PNGs in
-   `.review/before_after/` (`<topic>_before.png`, `<topic>_after.png`).
+6. **Show:** for each meaningful visual fix, graduate its before/after PNGs to
+   `.review/before_after/<branch>/` (`<topic>_before.png`, `<topic>_after.png`;
+   `<branch>` with `/` written as `-`, e.g. `feat-line-plot`).
    - In the end-of-task message: give their paths, so the product manager can open
      them.
    - In the PR body: describe the visual change in words. Executed gallery
@@ -218,17 +219,16 @@ layout helpers, gallery notebooks) goes through this loop before it is reported 
 **The `.review/` folder** (gitignored, local only) has a fixed layout, so stale
 renders never pass for current ones and nothing needed is deleted by mistake:
 
-| Folder | Holds | Who clears it |
+| Folder | Holds | Emptied |
 |---|---|---|
-| `<notebook>/` (one per gallery notebook), `theme/` | every figure of the last build or theme run | only the scripts, which replace it on each run; never edited or deleted by hand |
-| `before_after/` | the before/after pairs of the latest task | the main session, when a new task begins |
-| `dev/` | every other render: figures outside the gallery, development checks | the main session, when a new task begins |
+| `<notebook>/` (one per gallery notebook), `theme/` | every figure of the last build or theme run | only by the scripts, which replace it on each run; never edited or deleted by hand |
+| `dev/` | the working renders of a visual review loop: figures outside the gallery, attempts, development checks | by whoever starts a visual review loop, before its first render; it then keeps that loop's images until the next loop starts |
+| `before_after/<branch>/` | the before/after pairs of successful fixes, graduated from `dev/` (step 6) | never: it is the record of what each change fixed |
 
-- Emptying happens only then, never mid-task or at the end: the latest task's
-  images stay available until the next task begins. Subagents only add files, so
-  one agent never wipes another's images within a task.
-- Agents write nowhere else in `.review/`, and never delete anything else there. An
-  unknown file or folder is reported to the product manager, not removed.
+- `dev/` is the only scratch space for visual work. Visual review loops run one at
+  a time, because they share it.
+- Nothing else in `.review/` is ever written or deleted by hand. An unknown file or
+  folder is reported to the product manager, not removed.
 
 ## Settled decisions
 Summaries only; the records are the source.
