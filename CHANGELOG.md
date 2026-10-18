@@ -11,6 +11,11 @@ lists work that doesn't change what users install or call (CI, tests, docs).
 
 ## Unreleased
 
+### Internal
+- A `/release` command for the maintainer: it reads every change since the last
+  release, picks the version number and writes the changelog entry that becomes
+  the release text.
+
 ## 0.1.0 - 2026-10-18
 
 This is the first release of easy-viz. You pass a query result to one function and

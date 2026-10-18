@@ -83,6 +83,11 @@ Three jobs, each with only the permissions it needs:
 
 Runs on `main` are never cancelled, so a publish is never interrupted.
 
+The release pull request itself (version number, changelog entry) is prepared by
+the `/release` skill, `.claude/skills/release/SKILL.md`, which only the product
+manager invokes. It reads the changes since the last tag, picks the version by the
+rules of decision 0013, writes the entry, and follows the run above to PyPI.
+
 ## Invariants
 - The matrix lists exactly the versions decision 0005 supports. Changing that policy
   changes the matrix in the same PR.

@@ -112,7 +112,7 @@ below it. A directory's guide loads automatically once you read a file in it. **
 creating or editing anything in a directory, read its guide and every guide above it.**
 
 **Guides are tracked in git** ([decision 0008](docs/decisions/0008-tracked-agent-guides.md)),
-like the agent definitions in `.claude/agents/`, so:
+like the agent definitions in `.claude/agents/` and the skills in `.claude/skills/`, so:
 - Guide changes go through branches and PRs like code, and show up in PR diffs.
 - Guides and agent files are never part of the library: the build excludes them
   (`source-exclude` in `pyproject.toml`), and a test builds the package to prove it.
