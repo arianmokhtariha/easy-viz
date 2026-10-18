@@ -7,6 +7,21 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.13"
 authors = [{ name = "Arian Mokhtariha" }]
+keywords = ["plotly", "visualization", "charts", "sql", "analytics", "dataframe"]
+# The Python versions match the CI matrix (tests/test_packaging.py checks it). No
+# license classifier: the SPDX `license` field above replaces it (PEP 639).
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Framework :: Jupyter",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Typing :: Typed",
+]
 # Lower bounds only, never upper caps: easy-viz must fit into users' existing
 # environments without forcing them to up- or downgrade anything.
 dependencies = [
@@ -17,6 +32,12 @@ dependencies = [
     "scipy>=1.14.1",   # statistics (KDE, regression, clustering, distributions);
                        # 1.14.1 is the first with Python 3.13 wheels
 ]
+
+[project.urls]
+Homepage = "https://github.com/arianmokhtariha/easy-viz"
+Repository = "https://github.com/arianmokhtariha/easy-viz"
+Changelog = "https://github.com/arianmokhtariha/easy-viz/blob/main/CHANGELOG.md"
+Issues = "https://github.com/arianmokhtariha/easy-viz/issues"
 
 [project.optional-dependencies]
 export = ["kaleido>=1.5"]   # static PNG/SVG/PDF export; needs Chrome (plotly_get_chrome)

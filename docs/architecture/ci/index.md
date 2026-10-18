@@ -1,15 +1,20 @@
 # Continuous integration
 
-Covers: .github/workflows/ci.yml
+Covers: .github/workflows/ci.yml, .github/workflows/release.yml
 
 ## Responsibilities
 Run the project's checks (lint, formatting, strict type check, tests) automatically,
 so no change reaches `main` without proving it works on every Python version
-[decision 0005](../../decisions/0005-python-version-policy.md) supports. The workflow
-file is the single list of the exact commands and versions.
+[decision 0005](../../decisions/0005-python-version-policy.md) supports, and publish
+each new version to PyPI ([decision 0013](../../decisions/0013-automated-releases.md)).
+The workflow files are the single list of the exact commands and versions.
 
 ## How it works
-One GitHub Actions workflow, `CI`, with two jobs, `checks` and `lowest`.
+Two GitHub Actions workflows: `CI` (`ci.yml`) checks the code; `Release`
+(`release.yml`) checks the package and publishes it.
+
+### `CI`
+Two jobs, `checks` and `lowest`.
 
 **`checks`** runs on the newest locked versions:
 - **Triggers:** every pull request, and every push to `main` (which includes merges).
@@ -45,6 +50,39 @@ in `pyproject.toml` make: that easy-viz works with those versions.
 - It runs on Python 3.13, the oldest supported version, where old releases are
   likeliest to have packages.
 
+### `Release`
+Runs on every pull request, and after every `CI` run on `main` (a `workflow_run`
+trigger). Only a successful `CI` run of a push to this repository's `main` goes on:
+a failed run, or a pull request from a branch that happens to be named `main`, is
+skipped. That run checks out the commit `CI` tested, not `main`'s latest commit.
+Three jobs, each with only the permissions it needs:
+- **`build`** (`Build and check the package`), on every run:
+  - reads the version (`uv version --short`) and decides whether this run releases:
+    only a final version (digits and dots), only after `CI` on `main`, and only
+    when the tag `v<version>` doesn't exist yet. The log prints the
+    decision and its reason.
+  - for a final version, writes the release text with
+    [`scripts/release_notes.py`](../scripts/release_notes.md), which fails on a
+    missing or malformed changelog entry. This runs on pull requests too, so a
+    release pull request without notes fails before it is merged.
+  - builds the wheel and the source distribution (`uv build`), checks their
+    metadata and that the README renders on PyPI (`twine check --strict`), then
+    installs the wheel alone in a fresh environment, imports `easy_viz` and compares
+    the installed version with `pyproject.toml`.
+  - uploads `dist/` (and the notes, when releasing) as artifacts for the next jobs.
+- **`publish`** (`Publish to PyPI`), only when `build` decided to release: uploads
+  `dist/` with `pypa/gh-action-pypi-publish` through trusted publishing. It runs in
+  the GitHub environment `pypi` with `id-token: write`, the permission to request
+  the short-lived token PyPI checks. The upload includes attestations of where each
+  file was built. `skip-existing` makes a repeated upload a no-op, so a run that
+  uploaded but failed before tagging recovers with "Re-run all jobs".
+- **`github-release`** (`Create the GitHub release`), after a successful publish:
+  `gh release create v<version>` at the built commit, with the release text and the
+  two files attached. This creates the tag, which marks the version as released
+  for every later run.
+
+Runs on `main` are never cancelled, so a publish is never interrupted.
+
 ## Invariants
 - The matrix lists exactly the versions decision 0005 supports. Changing that policy
   changes the matrix in the same PR.
@@ -52,10 +90,27 @@ in `pyproject.toml` make: that easy-viz works with those versions.
   oldest supported Python (3.13) and passes the tests there; the `lowest` job
   enforces both. Newer Pythons are not checked at the bounds: an old release often
   has no wheel for them, and their resolvers pick newer releases anyway.
+- A version is uploaded to PyPI at most once: the tag check skips released
+  versions, and `skip-existing` skips files PyPI already has.
+- Nothing reaches PyPI that `CI` didn't test and `build` didn't check, on the same
+  commit.
 - CI runs the same commands as local development. A check added to the project's
   definition of done is added to the workflow in the same PR.
 
 ## Pitfalls
+- **A `workflow_run` trigger only works from `main`.** GitHub reads `release.yml`
+  from the default branch for it, so a pull request can test the build job but
+  not the release path; the first run after merging is the real test.
+- **PyPI's trusted publisher names `release.yml` and the environment `pypi`.**
+  Renaming either makes the upload fail with an "invalid publisher" error until the
+  publisher is updated in the PyPI project's settings.
+- **Release notes stay outside `dist/`.** The publish action uploads every file in
+  `dist/`, and PyPI rejects anything that isn't a distribution.
+- **A tag pushed by hand as `v<version>` blocks that version's release**: the
+  workflow reads the tag as "already released". Tags are created only by the
+  workflow.
+- **`uv.lock` records the project's own version.** A version change must update
+  the lock too (`uv version <new>` does both), or every `UV_LOCKED` job fails.
 - **`.python-version` pins the newest Python for local development.** The matrix
   overrides it through setup-uv's `python-version` input (it sets `UV_PYTHON`).
   Without that input, every job would silently run on the same version.

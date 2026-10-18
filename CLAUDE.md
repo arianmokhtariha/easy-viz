@@ -244,6 +244,7 @@ Summaries only; the records are the source.
 - [0010](docs/decisions/0010-one-bar-plot.md): one bar function; `grouped_bar_plot` merges into `bar_plot`, `pareto_plot` stays separate, "Other" is opt-in.
 - [0011](docs/decisions/0011-automatic-value-format.md): `value_format=None` formats values automatically (`862.3k`); a given format is a Python spec.
 - [0012](docs/decisions/0012-one-line-plot-continuous-time.md): one line function; `time_series_plot` merges into `line_plot`, and a time axis is always continuous (empty periods shown, never bridged silently).
+- [0013](docs/decisions/0013-automated-releases.md): a final version merged to `main` publishes to PyPI (trusted publishing) and creates the GitHub release from its changelog entry; the changelog format is fixed.
 
 ## Dependencies
 - `pyproject.toml` gives runtime dependencies lower bounds only, never upper caps, so

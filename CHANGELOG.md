@@ -1,7 +1,13 @@
 # Changelog
 
-User-visible changes to easy-viz. Format: [Keep a Changelog](https://keepachangelog.com/);
+Changes to easy-viz, newest first. Format: [Keep a Changelog](https://keepachangelog.com/);
 versions follow [Semantic Versioning](https://semver.org/).
+
+Each release's entry is also its GitHub release text, so the format is fixed and
+checked by `scripts/release_notes.py` ([decision 0013](docs/decisions/0013-automated-releases.md)):
+`## X.Y.Z - YYYY-MM-DD`, a one-paragraph summary, then only these sections, in this
+order: Added, Changed, Deprecated, Removed, Fixed, Security, Internal. Internal
+lists work that doesn't change what users install or call (CI, tests, docs).
 
 ## Unreleased
 
@@ -45,3 +51,7 @@ versions follow [Semantic Versioning](https://semver.org/).
   own call, so `warnings.filterwarnings("ignore", category=ev.EasyVizWarning)`
   silences easy-viz without silencing other libraries.
 - Type information for type checkers (`py.typed`).
+
+### Internal
+- GitHub Actions publishes each release to PyPI without a stored token and uses its
+  changelog entry as the GitHub release text.
