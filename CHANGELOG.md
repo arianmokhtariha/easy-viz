@@ -18,35 +18,28 @@ get back a finished Plotly figure in the easy-viz theme. It has two plot functio
 far, `bar_plot` and `line_plot`, along with themes, output defaults and image export.
 
 ### Added
-- `bar_plot`: bars per category from any query-result shape (one row per category,
-  raw rows with `agg`, series in a column with `color`, or in several columns with a
-  list `y`). Sorting, top N with an optional "Other" bar, side-by-side, stacked
-  (with totals) or 100 % bars, horizontal layout, value labels, `highlight`,
-  `color_map`, colouring by value (sequential, diverging or by sign), average and
-  target lines. With raw rows, bootstrap or standard-error confidence intervals and
-  a flag on bars built from too few rows. It replaces the original module's
-  `bar_plot` and `grouped_bar_plot`.
-- `line_plot`: lines over an ordered axis, usually time, from any query-result
-  shape (one row per period as-is, raw rows with `agg`, series in a column with
-  `color`, or in several columns with a list `y`). A time axis is always
-  continuous: the calendar grain is read from the data (or set with
-  `time_grain`), raw dates are bucketed into it, and a period without rows shows
-  as a gap (or a zero, or bridged, with `missing_periods`) instead of being
-  silently skipped. Rolling means over calendar periods, confidence bands with raw
-  rows, `highlight`, `color_map`, an overall line across series, average, target
-  and event lines, value labels on every point or only the last, both ends or the
-  extremes, markers, step and spline lines, area fill, log axes and a range
-  slider. It replaces the original module's `line_plot` and `time_series_plot`;
-  line width and marker size moved to the theme.
-- `Theme.line_width` and `Theme.marker_size`: the width of data lines and the size
-  of their markers. Custom themes built field by field need values for them.
-- `Theme.marker_sequential_scale`: the low-to-high scale for marks coloured by
-  value, visible at its lowest colour. Custom themes built field by field need a
-  value for it.
+- `bar_plot`: bars per category from any query-result shape: one row per category,
+  raw rows with `agg`, series in a column with `color`, or several measure columns
+  as a list `y`. It sorts, keeps the top N with an optional "Other" bar, and draws
+  side-by-side, stacked (with totals) or 100 % bars, vertical or horizontal. It
+  also has value labels, `highlight`, `color_map`, colouring by value (sequential,
+  diverging or by sign), and average and target lines. With raw rows it adds
+  bootstrap or standard-error confidence intervals and flags bars built from too
+  few rows.
+- `line_plot`: lines over an ordered axis, usually time, from the same query-result
+  shapes. A time axis is always continuous: easy-viz reads the calendar grain from
+  the data (or takes `time_grain`), buckets raw dates into it, and shows a period
+  without rows as a gap, a zero or a bridged line (`missing_periods`) instead of
+  skipping it silently. It also draws rolling means over calendar periods,
+  confidence bands from raw rows, `highlight`, `color_map`, an overall line across
+  series, and average, target and event lines. Value labels can go on every point,
+  the last one, both ends or the extremes. Markers, step and spline lines, area
+  fill, log axes and a range slider are options too.
 - Themes: `Theme`, `set_theme()` and `get_theme()`, with two built-in themes, `dark`
-  (the original house style) and `light`. Both are also registered as the Plotly
-  templates `easy_viz_dark` and `easy_viz_light` for your own figures; easy-viz never
-  changes Plotly's default template.
+  and `light`. A theme sets every colour, font and size, including line width,
+  marker size and the colour scale for marks coloured by value. Both are also
+  registered as the Plotly templates `easy_viz_dark` and `easy_viz_light` for your
+  own figures; easy-viz never changes Plotly's default template.
 - Global output defaults: `get_config()` and `set_config()` for the default figure
   width (1400 px) and export resolution (2x).
 - Static export: `save()` for one figure and `save_many()` for a batch in a single

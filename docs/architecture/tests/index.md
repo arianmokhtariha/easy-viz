@@ -128,11 +128,14 @@ detection. No kernel or Chrome is needed.
 ### `scripts/test_release_notes.py`
 Runs the changelog check on the real `CHANGELOG.md`, so a pull request that breaks
 its format fails at once instead of at release time. On a small synthetic changelog
-it checks the release body (the entry alone, the footer's compare link, the first
-release's commits link) and that each format error that would make release texts
+it checks the release body (the entry alone, with hard-wrapped lines joined per
+paragraph and per bullet and nested bullets kept; the footer's compare link; the
+first release's commits link) and that each format error that would make release texts
 inconsistent is refused: unknown or out-of-order sections, a missing or
 multi-paragraph summary, empty or non-bullet sections, versions or dates out of
-order, a malformed heading, notes above the first section of Unreleased.
+order, a malformed heading, notes above the first section of Unreleased, a
+duplicate section or Unreleased, a release without sections, and code blocks or
+list markers other than `- `, which the line joining would garble.
 
 ### `test_packaging.py`
 Builds the source distribution and the wheel with `uv build` into a temporary

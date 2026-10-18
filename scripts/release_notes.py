@@ -44,6 +44,8 @@ SECTIONS = (
     "Internal",
 )
 RELEASE_HEADING = re.compile(r"(\d+)\.(\d+)\.(\d+) - (\d{4}-\d{2}-\d{2})")
+# Markdown that needs its own lines: code fences and list markers other than "- ".
+FOREIGN_BLOCK = re.compile(r"```|~~~|[*+] |\d+[.)] ")
 
 
 class ChangelogError(ValueError):
@@ -99,6 +101,13 @@ def _check_sections(heading: str, sections: list[tuple[str, str]]) -> None:
             raise ChangelogError(
                 f"## {heading}: '### {name}' must be a bullet list ('- ' items)."
             )
+        # unwrap() would join these into the line above and garble the release.
+        for line in lines:
+            if FOREIGN_BLOCK.match(line.lstrip()):
+                raise ChangelogError(
+                    f"## {heading}: '### {name}' has '{line.strip()}'. Use only "
+                    "'- ' bullets and prose: no code blocks or other list markers."
+                )
 
 
 def parse_changelog(text: str) -> list[Release]:

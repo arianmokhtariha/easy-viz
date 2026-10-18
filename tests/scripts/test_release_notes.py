@@ -79,6 +79,10 @@ def test_a_version_without_an_entry_is_refused() -> None:
             "at most once",
         ),
         ("## 0.1.0 - ", "## Unreleased\n\n## 0.1.0 - ", "only once"),
+        # Joined into one line by unwrap(), they would garble the release text.
+        ("  with a hole option", "  ```python\n  ev.pie_plot(df)\n  ```", "code"),
+        ("  with a hole option", "  1. upgrade\n  2. rename", "list markers"),
+        ("  with a hole option", "  * starred", "list markers"),
         (
             "The first release.\n\n### Added\n- `bar_plot`\n",
             "The first release.\n",
