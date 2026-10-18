@@ -22,7 +22,8 @@ It uses only the standard library, so CI runs it without installing the project.
 - `release_body` returns the summary and the sections as written, then a footer:
   the install command (with the package name read from `pyproject.toml`) and a link
   comparing the previous release's tag with this one, or listing this tag's commits
-  for the first release.
+  for the first release. `unwrap` first joins the changelog's hard-wrapped lines
+  into one line per paragraph and per bullet (nested bullets kept).
 - `main` prints the body, or exits with the error message.
 
 ## Invariants
@@ -34,5 +35,8 @@ It uses only the standard library, so CI runs it without installing the project.
 ## Pitfalls
 - **The body is the entry as written.** The script never rewrites prose, so the
   summary and bullets must already read well in the changelog.
+- **GitHub shows every line break in a release body**, unlike Markdown files, so
+  the 88-column wrapping of the changelog would cut sentences in half there; that
+  is why `unwrap` exists. A line that must stay separate has to be its own bullet.
 - **Release tags are `v<version>`.** The compare link assumes it, as does the
   workflow that creates them.

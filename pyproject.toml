@@ -1,6 +1,6 @@
 [project]
 name = "easy-viz"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "The Metabase / Power BI of Python at the code level: query result in, finished Plotly figure out."
 readme = "README.md"
 license = "MIT"

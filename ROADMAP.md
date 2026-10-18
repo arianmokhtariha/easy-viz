@@ -6,7 +6,7 @@ Where easy-viz stands. Updated in the PR that changes it.
 - Nothing in progress.
 
 ## Next
-- Release 0.1.0 (`bar_plot` and `line_plot`).
+- Nothing scheduled; the next item comes from Later.
 
 ## Later
 - Small multiples (`facet_col`, `facet_row`) for every plot function, in one plan
@@ -53,6 +53,7 @@ Where easy-viz stands. Updated in the PR that changes it.
 - README showcase built from gallery images
 
 ## Done
+- Release 0.1.0 on PyPI (`bar_plot` and `line_plot`), 2026-10-18
 - Automated releases ([decision 0013](docs/decisions/0013-automated-releases.md)):
   a final version merged to `main` is built and checked in CI, published to PyPI
   through trusted publishing and given a GitHub release whose text is its

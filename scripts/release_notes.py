@@ -15,8 +15,9 @@ The changelog has a strict format, so every release body has the same structure
   one ``###`` section, using only the names in ``SECTIONS``, in that order. Each
   section is a non-empty bullet list.
 
-The body is the summary and the sections as written, plus a fixed footer: the
-install command and a link to every commit since the previous release.
+The body is the summary and the sections as written, with wrapped lines joined
+(GitHub shows every line break), plus a fixed footer: the install command and a
+link to every commit since the previous release.
 
 Stdlib only: CI runs it without installing the project.
 """
@@ -156,6 +157,22 @@ def _key(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
 
+def unwrap(text: str) -> str:
+    """Join hard-wrapped lines: one line per paragraph and per bullet.
+
+    The changelog wraps at 88 columns, but GitHub shows every line break in a
+    release body, which would cut sentences in half there.
+    """
+    lines: list[str] = []
+    for line in text.splitlines():
+        item = line.lstrip()
+        if lines and item and lines[-1].strip() and not item.startswith("- "):
+            lines[-1] = f"{lines[-1]} {item}"
+        else:
+            lines.append(line)
+    return "\n".join(lines)
+
+
 def release_body(
     releases: Sequence[Release], version: str, repo: str, package: str
 ) -> str:
@@ -176,9 +193,11 @@ def release_body(
         )
     else:
         changes = f"https://github.com/{repo}/commits/v{version}"
-    sections = "\n\n".join(f"### {name}\n{body}" for name, body in release.sections)
+    sections = "\n\n".join(
+        f"### {name}\n{unwrap(body)}" for name, body in release.sections
+    )
     return (
-        f"{release.summary}\n\n{sections}\n\n---\n\n"
+        f"{unwrap(release.summary)}\n\n{sections}\n\n---\n\n"
         f"Install or upgrade: `pip install --upgrade {package}`\n\n"
         f"Full list of changes: {changes}\n"
     )

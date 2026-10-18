@@ -11,6 +11,12 @@ lists work that doesn't change what users install or call (CI, tests, docs).
 
 ## Unreleased
 
+## 0.1.0 - 2026-10-18
+
+This is the first release of easy-viz. You pass a query result to one function and
+get back a finished Plotly figure in the easy-viz theme. It has two plot functions so
+far, `bar_plot` and `line_plot`, along with themes, output defaults and image export.
+
 ### Added
 - `bar_plot`: bars per category from any query-result shape (one row per category,
   raw rows with `agg`, series in a column with `color`, or in several columns with a
@@ -53,5 +59,9 @@ lists work that doesn't change what users install or call (CI, tests, docs).
 - Type information for type checkers (`py.typed`).
 
 ### Internal
+- CI runs lint, type checks and the tests on Python 3.13, 3.14 and 3.15, and once
+  more with every dependency at the oldest version easy-viz allows.
+- The gallery has one executed notebook per plot function. Every chart in it starts
+  from a SQL query on a fictional retailer's data.
 - GitHub Actions publishes each release to PyPI without a stored token and uses its
   changelog entry as the GitHub release text.
