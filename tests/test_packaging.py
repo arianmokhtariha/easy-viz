@@ -4,11 +4,15 @@ Agent guides (``CLAUDE.md``) and agent definitions (``.claude/``) are tracked in
 repository, some of them inside the package directory, but they are not part of the
 library. ``source-exclude`` in ``pyproject.toml`` keeps them out of both the source
 distribution and the wheel; this test builds both for real and looks inside.
+
+It also keeps the package metadata PyPI shows in line with what CI tests.
 """
 
+import re
 import shutil
 import subprocess
 import tarfile
+import tomllib
 import zipfile
 from collections.abc import Iterable
 from pathlib import Path, PurePosixPath
@@ -70,6 +74,20 @@ def test_sdist_holds_the_package_and_no_agent_file(
     sdist, _ = built
     assert any(name.endswith("/src/easy_viz/__init__.py") for name in sdist)
     assert agent_files(sdist) == [], "Add them to source-exclude in pyproject.toml."
+
+
+def test_python_classifiers_match_the_ci_matrix() -> None:
+    # PyPI shows the classifiers as the supported versions; CI is what tests them.
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    classifiers = {
+        c.removeprefix("Programming Language :: Python :: ")
+        for c in project["project"]["classifiers"]
+        if re.fullmatch(r"Programming Language :: Python :: 3\.\d+", c)
+    }
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    matrix = re.search(r"python-version: \[(.*?)\]", ci)
+    assert matrix is not None
+    assert classifiers == set(re.findall(r"\"([\d.]+)\"", matrix[1]))
 
 
 def test_agent_file_detector() -> None:

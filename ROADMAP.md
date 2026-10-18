@@ -51,10 +51,12 @@ Where easy-viz stands. Updated in the PR that changes it.
   `color_map` in every function where they fit (built in `bar_plot`)
 - Docs site rendering the gallery notebooks
 - README showcase built from gallery images
-- Automated releases: a version bump merged to `main` builds in CI, creates the
-  GitHub release and publishes to PyPI through trusted publishing
 
 ## Done
+- Automated releases ([decision 0013](docs/decisions/0013-automated-releases.md)):
+  a final version merged to `main` is built and checked in CI, published to PyPI
+  through trusted publishing and given a GitHub release whose text is its
+  changelog entry; the changelog's format is checked on every pull request
 - `line_plot` (plan 0004): one line function for every query shape, merging the
   original `line_plot` and `time_series_plot`
   ([decision 0012](docs/decisions/0012-one-line-plot-continuous-time.md)); a time

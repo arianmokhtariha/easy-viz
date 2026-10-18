@@ -1,0 +1,161 @@
+# Publish easy-viz to PyPI when a new final version reaches main (decision 0013).
+# Every pull request runs the build job too, so a package that would fail to build,
+# render on PyPI or import is caught before it can be released.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [pyproject.toml]   # the version lives there
+  pull_request:
+  # Re-runs a release whose publish failed (e.g. PyPI was down). The guards in the
+  # build job keep it from publishing anything twice or from another branch.
+  workflow_dispatch:
+
+# Read-only by default; the jobs that publish ask for exactly what they need.
+permissions:
+  contents: read
+
+# A new push to a PR cancels the run it makes obsolete. A release in progress on
+# main is never cancelled halfway through publishing.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build and check the package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      UV_LOCKED: 1
+    outputs:
+      version: ${{ steps.decide.outputs.version }}
+      release: ${{ steps.decide.outputs.release }}
+    steps:
+      # Actions are pinned to commit SHAs: a tag can be moved, a commit can't.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv and Python 3.13
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.13"
+
+      # Releases only a final version (digits and dots: never a .dev or rc), only
+      # from main, and only once: an existing tag means it is already out. PyPI
+      # never accepts the same version twice, so the tag check keeps a re-run
+      # from failing on an upload that already happened.
+      - name: Decide whether this commit is a release
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          version=$(uv version --short)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          final=false
+          [[ "$version" =~ ^[0-9]+(\.[0-9]+)*$ ]] && final=true
+          echo "final=$final" >> "$GITHUB_OUTPUT"
+          release=false
+          if [[ "$final" == false ]]; then
+            reason="$version is a development or pre-release version"
+          elif [[ "$EVENT" == pull_request || "$GITHUB_REF" != refs/heads/main ]]; then
+            reason="only main publishes"
+          elif git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null; then
+            reason="v$version is already released"
+          else
+            release=true
+            reason="v$version is a new version on main"
+          fi
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+          echo "Release: $release ($reason)"
+
+      # A final version must have its changelog entry, on pull requests too, so a
+      # release PR without notes fails before it is merged. Written outside dist/:
+      # the publish step uploads everything in dist/.
+      - name: Write the release notes from CHANGELOG.md
+        if: ${{ steps.decide.outputs.final == 'true' }}
+        run: |
+          mkdir notes
+          uv run --no-project python scripts/release_notes.py \
+            "${{ steps.decide.outputs.version }}" --repo "$GITHUB_REPOSITORY" \
+            > notes/release.md
+          cat notes/release.md
+
+      - name: Build the wheel and the source distribution
+        run: uv build
+
+      # Fails if the README would not render on the PyPI project page.
+      - name: Check the package metadata
+        run: uvx twine@7.0.0 check --strict dist/*
+
+      # Installs the built wheel alone, in a fresh environment without the
+      # repository's code, so a file missing from the wheel fails here.
+      - name: Install the wheel and import it
+        env:
+          VERSION: ${{ steps.decide.outputs.version }}
+        run: |
+          uv run --isolated --no-project --with dist/*.whl python -c "
+          from importlib.metadata import version
+          import easy_viz
+          assert version('easy-viz') == '$VERSION', version('easy-viz')
+          print('easy-viz', version('easy-viz'), 'imports:', len(easy_viz.__all__), 'names')
+          "
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ steps.decide.outputs.release == 'true' }}
+        with:
+          name: notes
+          path: notes/
+          if-no-files-found: error
+
+  # Trusted publishing: PyPI accepts uploads from this workflow file in this
+  # repository and environment, proven by a short-lived OIDC token, so there is
+  # no API token to store. The action also uploads signed attestations of where
+  # each file was built.
+  publish:
+    name: Publish to PyPI
+    needs: build
+    if: ${{ needs.build.outputs.release == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/easy-viz/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write   # the OIDC token PyPI checks
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+
+  # Runs only after PyPI accepted the upload, so a GitHub release never announces
+  # a version users can't install. Creating the release creates the tag.
+  github-release:
+    name: Create the GitHub release
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write   # create the tag and the release
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: artifacts/
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: >-
+          gh release create "v$VERSION" artifacts/dist/*
+          --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA"
+          --title "easy-viz $VERSION" --notes-file artifacts/notes/release.md

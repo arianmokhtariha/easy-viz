@@ -13,7 +13,7 @@ The documentation is the single source of truth for humans and agents. Code show
 | Work not built yet | `docs/plans/NNNN-*.md` | Has a `Status`; deleted when implemented |
 | Public API reference | docstrings → generated pages | Never restated in prose docs |
 | Usage guide and showcase | `gallery/` notebooks → docs site and README images | Executed in CI; updated with every plot change |
-| Progress / user-visible changes | `ROADMAP.md`, `CHANGELOG.md` (repo root) | Updated in the PR that causes the change |
+| Progress / changes per release | `ROADMAP.md`, `CHANGELOG.md` (repo root) | Updated in the PR that causes the change; the changelog's format is fixed ([decision 0013](decisions/0013-automated-releases.md)) |
 
 ## Rules
 1. **One fact, one place.** Other documents link to it instead of repeating it.

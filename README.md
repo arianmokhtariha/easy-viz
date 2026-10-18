@@ -11,15 +11,31 @@ plot goes from a one-line default to an advanced chart by changing arguments, no
 writing plotting code. Every function returns a plain Plotly figure, so anything the
 parameters don't cover can still be done with Plotly.
 
-> **Status:** pre-alpha, under active development. Not on PyPI yet.
+> **Status:** alpha, under active development. The API may still change between
+> 0.x releases; the [changelog](https://github.com/arianmokhtariha/easy-viz/blob/main/CHANGELOG.md)
+> lists every change.
 
-The [gallery](gallery/) shows every function on a fictional retailer's data, starting
-from a SQL query each time.
+## Install
+```
+pip install easy-viz
+```
+For PNG, SVG and PDF export with `ev.save()`, add the `export` extra (it needs
+Chrome; `plotly_get_chrome` installs it):
+```
+pip install "easy-viz[export]"
+```
+Python 3.13 or newer.
+
+The [gallery](https://github.com/arianmokhtariha/easy-viz/tree/main/gallery) shows
+every function on a fictional retailer's data, starting from a SQL query each time.
 
 ## Development
 ```
 uv sync --all-extras --all-groups
 uv run pytest
 ```
-What easy-viz is for: [`docs/product.md`](docs/product.md). How it's organised, and
-why: [`docs/`](docs/).
+What easy-viz is for: [`docs/product.md`](https://github.com/arianmokhtariha/easy-viz/blob/main/docs/product.md).
+How it's organised, and why: [`docs/`](https://github.com/arianmokhtariha/easy-viz/tree/main/docs).
+<!-- Links are absolute because this file is also the PyPI project page, where
+relative links break. -->
+

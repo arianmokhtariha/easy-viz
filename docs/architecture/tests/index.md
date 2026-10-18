@@ -1,6 +1,6 @@
 # Tests
 
-Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py, tests/test_packaging.py, tests/test_gallery.py, tests/test_showcase_data.py, tests/scripts/test_build_gallery.py, tests/stats/test_intervals.py, tests/plots/test_comparison.py, tests/plots/test_timeseries.py
+Covers: tests/conftest.py, tests/test_import.py, tests/test_meta.py, tests/test_warnings.py, tests/test_config.py, tests/test_data.py, tests/test_validate.py, tests/test_layout.py, tests/test_export.py, tests/theme/test_theme.py, tests/theme/test_registry.py, tests/theme/test_color.py, tests/test_contract.py, tests/test_layering.py, tests/test_styling_literals.py, tests/test_knowledge_base.py, tests/test_packaging.py, tests/test_gallery.py, tests/test_showcase_data.py, tests/scripts/test_build_gallery.py, tests/scripts/test_release_notes.py, tests/stats/test_intervals.py, tests/plots/test_comparison.py, tests/plots/test_timeseries.py
 
 ## Responsibilities
 Prove that the library is correct and that the repository stays consistent with
@@ -125,6 +125,15 @@ Tests the gallery build script's pure functions on synthetic notebooks: notebook
 selection, figure naming, `readme:` tag validation, PNG embedding and stale-image
 detection. No kernel or Chrome is needed.
 
+### `scripts/test_release_notes.py`
+Runs the changelog check on the real `CHANGELOG.md`, so a pull request that breaks
+its format fails at once instead of at release time. On a small synthetic changelog
+it checks the release body (the entry alone, the footer's compare link, the first
+release's commits link) and that each format error that would make release texts
+inconsistent is refused: unknown or out-of-order sections, a missing or
+multi-paragraph summary, empty or non-bullet sections, versions or dates out of
+order, a malformed heading, notes above the first section of Unreleased.
+
 ### `test_packaging.py`
 Builds the source distribution and the wheel with `uv build` into a temporary
 directory and lists their contents. Both must hold the package and no agent file
@@ -133,7 +142,9 @@ and some sit inside `src/easy_viz/`, so only the build backend's `source-exclude
 keeps them out of the library
 ([decision 0008](../../decisions/0008-tracked-agent-guides.md)). A separate test
 asserts that guides exist in the source tree, so the build checks cannot pass for
-want of anything to exclude. Skips when `uv` is not on `PATH`.
+want of anything to exclude. Skips when `uv` is not on `PATH`. A last test keeps
+the Python version classifiers PyPI shows equal to the CI matrix, the versions
+actually tested.
 
 ## Invariants
 - A check that depends on a directory that does not exist yet passes vacuously and
