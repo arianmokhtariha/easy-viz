@@ -24,6 +24,8 @@ the library.
 
 ## Pitfalls
 - **Run from the project environment** (`uv run`), so the scripts use the same
-  easy-viz and Plotly versions as the tests. The exception is `build_gallery.py`,
-  which runs in an isolated Python 3.14 environment built from the same lock file
-  ([decision 0009](../../decisions/0009-gallery-sql-duckdb.md)).
+  easy-viz and Plotly versions as the tests. Two exceptions:
+  - `build_gallery.py` runs in an isolated Python 3.14 environment built from the
+    same lock file ([decision 0009](../../decisions/0009-gallery-sql-duckdb.md)).
+  - `release_notes.py` runs with `uv run --no-project` in CI, where the project is
+    not installed, so it must stay standard-library only.

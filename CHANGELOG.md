@@ -51,3 +51,7 @@ lists work that doesn't change what users install or call (CI, tests, docs).
   own call, so `warnings.filterwarnings("ignore", category=ev.EasyVizWarning)`
   silences easy-viz without silencing other libraries.
 - Type information for type checkers (`py.typed`).
+
+### Internal
+- GitHub Actions publishes each release to PyPI without a stored token and uses its
+  changelog entry as the GitHub release text.

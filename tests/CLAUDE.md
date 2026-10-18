@@ -66,4 +66,6 @@
   - every CLAUDE.md is listed in the root guide table, every listed one exists, and
     links inside the guides resolve
 - `test_packaging.py`: the built wheel and source distribution contain the library
-  and no agent file (CLAUDE.md, `.claude/`)
+  and no agent file (CLAUDE.md, `.claude/`); the Python classifiers equal the CI
+  matrix
+- `scripts/test_release_notes.py`: the real `CHANGELOG.md` follows its fixed format

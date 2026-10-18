@@ -4,13 +4,14 @@
 name: Release
 
 on:
-  push:
+  # After CI finishes on main, so only a commit whose tests passed is released.
+  # Every commit on main comes through here; the build job decides whether it is
+  # a new version. A failed release is recovered with "Re-run all jobs".
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-    paths: [pyproject.toml]   # the version lives there
   pull_request:
-  # Re-runs a release whose publish failed (e.g. PyPI was down). The guards in the
-  # build job keep it from publishing anything twice or from another branch.
-  workflow_dispatch:
 
 # Read-only by default; the jobs that publish ask for exactly what they need.
 permissions:
@@ -25,6 +26,14 @@ concurrency:
 jobs:
   build:
     name: Build and check the package
+    # A workflow_run also fires for failed CI runs, and for pull requests whose
+    # branch is named main (from forks too): only a successful CI run of a push
+    # to this repository's main may go on.
+    if: >-
+      github.event_name == 'pull_request' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -32,9 +41,13 @@ jobs:
     outputs:
       version: ${{ steps.decide.outputs.version }}
       release: ${{ steps.decide.outputs.release }}
+      sha: ${{ steps.decide.outputs.sha }}
     steps:
       # Actions are pinned to commit SHAs: a tag can be moved, a commit can't.
+      # After CI, the commit CI tested; GITHUB_SHA would be main's latest commit.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Install uv and Python 3.13
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
@@ -42,9 +55,8 @@ jobs:
           python-version: "3.13"
 
       # Releases only a final version (digits and dots: never a .dev or rc), only
-      # from main, and only once: an existing tag means it is already out. PyPI
-      # never accepts the same version twice, so the tag check keeps a re-run
-      # from failing on an upload that already happened.
+      # after CI on main, and only once: the tag, created with the GitHub release,
+      # marks a version as out.
       - name: Decide whether this commit is a release
         id: decide
         env:
@@ -52,14 +64,15 @@ jobs:
         run: |
           version=$(uv version --short)
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           final=false
           [[ "$version" =~ ^[0-9]+(\.[0-9]+)*$ ]] && final=true
           echo "final=$final" >> "$GITHUB_OUTPUT"
           release=false
           if [[ "$final" == false ]]; then
             reason="$version is a development or pre-release version"
-          elif [[ "$EVENT" == pull_request || "$GITHUB_REF" != refs/heads/main ]]; then
-            reason="only main publishes"
+          elif [[ "$EVENT" != workflow_run ]]; then
+            reason="only main publishes, after CI"
           elif git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null; then
             reason="v$version is already released"
           else
@@ -135,7 +148,11 @@ jobs:
           name: dist
           path: dist/
 
+      # skip-existing: if an earlier run uploaded the files but failed before
+      # tagging, a re-run skips the upload and goes on to the GitHub release.
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          skip-existing: true
 
   # Runs only after PyPI accepted the upload, so a GitHub release never announces
   # a version users can't install. Creating the release creates the tag.
@@ -155,7 +172,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.build.outputs.version }}
+          SHA: ${{ needs.build.outputs.sha }}
         run: >-
           gh release create "v$VERSION" artifacts/dist/*
-          --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA"
+          --repo "$GITHUB_REPOSITORY" --target "$SHA"
           --title "easy-viz $VERSION" --notes-file artifacts/notes/release.md

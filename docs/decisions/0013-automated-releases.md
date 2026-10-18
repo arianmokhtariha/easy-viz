@@ -16,8 +16,10 @@ product manager's approval (root guide), so the merge of that change is the natu
 moment to publish.
 
 ## Decision
-- **A final version merged to `main` is released.** The `Release` workflow runs
-  when `pyproject.toml` changes on `main`. It publishes only a final version
+- **A final version merged to `main` is released, once its tests pass.** The
+  `Release` workflow runs after the `CI` workflow succeeds on a commit pushed to
+  `main`, and builds that exact commit, so a merge that breaks the tests never
+  reaches PyPI. It publishes only a final version
   (`0.2.0`, never `0.2.0.dev0` or `0.2.0rc1`) whose tag `v<version>` does not exist
   yet. Development happens on a `.dev` version or on the last released one, so an
   ordinary merge never publishes.
@@ -49,6 +51,9 @@ moment to publish.
   skipped.
 - **Publishing on a pushed tag:** a tag can be pushed from any branch without a
   pull request or green CI, and the version in `pyproject.toml` can disagree with it.
+- **Publishing on the push to `main`, beside CI:** simpler, but nothing waits for
+  the tests of the merged commit, which can fail when two pull requests merge close
+  together.
 - **Release bots (release-please, semantic-release):** they compute versions and
   notes from commit messages alone. Our squash-merged commits are titled well, but
   the notes deserve a human-quality summary, and a bot adds a dependency and its
@@ -59,8 +64,9 @@ moment to publish.
 
 ## Consequences
 - **Easier:** a release is one reviewed pull request; no secret to manage; every
-  release has notes with the same structure; a failed publish can be re-run from
-  the Actions tab without risk of a double upload.
+  release has notes with the same structure; a failed release is re-run from the
+  Actions tab ("Re-run all jobs"): an upload that already happened is skipped, and
+  the GitHub release follows.
 - **Harder:**
   - the changelog must keep its format; a pull request that breaks it fails
   - a mistake that reaches PyPI can only be fixed by a new version (yanking hides

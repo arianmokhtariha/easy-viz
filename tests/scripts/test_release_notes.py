@@ -64,6 +64,18 @@ def test_a_version_without_an_entry_is_refused() -> None:
         ("## 0.2.0 - 2026-11-02", "## 0.2.0 (2026-11-02)", "X.Y.Z - YYYY-MM-DD"),
         ("## 0.2.0 - 2026-11-02", "## 0.2.0 - 2026-13-02", "not a date"),
         ("## Unreleased\n\n", "## Unreleased\n\nA note.\n\n", "Unreleased"),
+        # Two pull requests that each add a "### Fixed" merge into duplicates.
+        (
+            "### Fixed\n- a fix",
+            "### Fixed\n- one\n\n### Fixed\n- a fix",
+            "at most once",
+        ),
+        ("## 0.1.0 - ", "## Unreleased\n\n## 0.1.0 - ", "only once"),
+        (
+            "The first release.\n\n### Added\n- `bar_plot`\n",
+            "The first release.\n",
+            "at least one",
+        ),
     ],
 )
 def test_format_errors_are_refused(old: str, new: str, message: str) -> None:

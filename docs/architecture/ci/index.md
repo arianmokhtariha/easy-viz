@@ -51,13 +51,15 @@ in `pyproject.toml` make: that easy-viz works with those versions.
   likeliest to have packages.
 
 ### `Release`
-Runs on every pull request, on every push to `main` that changes `pyproject.toml`
-(where the version lives), and by hand from the Actions tab (to re-run a failed
-publish). Three jobs, each with only the permissions it needs:
+Runs on every pull request, and after every `CI` run on `main` (a `workflow_run`
+trigger). Only a successful `CI` run of a push to this repository's `main` goes on:
+a failed run, or a pull request from a branch that happens to be named `main`, is
+skipped. That run checks out the commit `CI` tested, not `main`'s latest commit.
+Three jobs, each with only the permissions it needs:
 - **`build`** (`Build and check the package`), on every run:
   - reads the version (`uv version --short`) and decides whether this run releases:
-    only a final version (digits and dots), only on `main` outside pull requests,
-    and only when the tag `v<version>` doesn't exist yet. The log prints the
+    only a final version (digits and dots), only after `CI` on `main`, and only
+    when the tag `v<version>` doesn't exist yet. The log prints the
     decision and its reason.
   - for a final version, writes the release text with
     [`scripts/release_notes.py`](../scripts/release_notes.md), which fails on a
@@ -72,7 +74,8 @@ publish). Three jobs, each with only the permissions it needs:
   `dist/` with `pypa/gh-action-pypi-publish` through trusted publishing. It runs in
   the GitHub environment `pypi` with `id-token: write`, the permission to request
   the short-lived token PyPI checks. The upload includes attestations of where each
-  file was built.
+  file was built. `skip-existing` makes a repeated upload a no-op, so a run that
+  uploaded but failed before tagging recovers with "Re-run all jobs".
 - **`github-release`** (`Create the GitHub release`), after a successful publish:
   `gh release create v<version>` at the built commit, with the release text and the
   two files attached. This creates the tag, which marks the version as released
@@ -88,12 +91,16 @@ Runs on `main` are never cancelled, so a publish is never interrupted.
   enforces both. Newer Pythons are not checked at the bounds: an old release often
   has no wheel for them, and their resolvers pick newer releases anyway.
 - A version is uploaded to PyPI at most once: the tag check skips released
-  versions, and PyPI refuses a second upload of the same version anyway.
-- Nothing reaches PyPI that `build` didn't check in the same run.
+  versions, and `skip-existing` skips files PyPI already has.
+- Nothing reaches PyPI that `CI` didn't test and `build` didn't check, on the same
+  commit.
 - CI runs the same commands as local development. A check added to the project's
   definition of done is added to the workflow in the same PR.
 
 ## Pitfalls
+- **A `workflow_run` trigger only works from `main`.** GitHub reads `release.yml`
+  from the default branch for it, so a pull request can test the build job but
+  not the release path; the first run after merging is the real test.
 - **PyPI's trusted publisher names `release.yml` and the environment `pypi`.**
   Renaming either makes the upload fail with an "invalid publisher" error until the
   publisher is updated in the PyPI project's settings.
