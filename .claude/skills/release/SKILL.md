@@ -31,11 +31,15 @@ Stop and report to the product manager if any of these fails:
 - the working tree is clean; `git switch main && git pull && git fetch --tags`
 - the latest `CI` and `Release` runs on `main` are green
   (`gh run list --branch main --limit 4`)
-- no release pull request is open (`gh pr list --head release/`)
+- no release pull request is open: this prints nothing
+  (`--head` matches whole branch names only, so filter by prefix):
+  `gh pr list --json number,headRefName --jq '.[] | select(.headRefName | startswith("release/"))'`
 - the last release is the newest tag `v<X.Y.Z>`
-  (`git describe --tags --abbrev=0 --match "v[0-9]*"`), and `uv version --short`
-  prints that same version. With no tag at all, this is the first release and the
-  range below is the whole history.
+  (`git describe --tags --abbrev=0 --match "v[0-9]*"`). `uv version --short`
+  prints either that same version, or a `.dev` version of a later one
+  (`0.3.0.dev0` after `0.2.0`), which decision 0013 also allows on `main`. With
+  no tag at all, this is the first release and the range below is the whole
+  history.
 
 ## 2. Collect every change since the last release
 Commit titles and PR descriptions are claims. The diff is the evidence.
@@ -78,7 +82,11 @@ From the last release `X.Y.Z`, by decision 0013:
 | only Internal | no release | no release |
 
 - **Only Internal:** stop. Tell the product manager there is nothing new for users
-  to install and list what is waiting. Release only if they insist.
+  to install and list what is waiting. Decision 0013 rules such a release out;
+  changing that needs a new decision record first, not a release.
+- **`main` is on a `.dev` version** (step 1): release that version without the
+  `.dev` part (`0.3.0.dev0` becomes `0.3.0`), unless the table asks for a higher
+  one. Never go below it.
 - **An argument was given** (`patch`, `minor`, `major` or an exact version): use it
   if it is higher than the last release and not lower than the table requires.
   Otherwise ask before going on: a patch that hides a breaking change misleads
@@ -118,45 +126,58 @@ Then compare the entry with the previous release's: the same tone, the same bull
 style, the same level of detail.
 
 ## 7. Bump, check, preview
+- Create the branch `release/v<version>`.
 - `uv version <version>`: updates `pyproject.toml` and `uv.lock` together.
-- If `ROADMAP.md` names this release under *Next*, move it to *Done*. At 1.0.0,
-  update the README's status line.
+- `ROADMAP.md`: add `Release <version> on PyPI (<the headline changes>), <date>` at
+  the top of *Done*, as for every earlier release, and remove any *Next* item it
+  completes. At 1.0.0, also update the README's status line.
 - `uv run --no-project python scripts/release_notes.py <version> --repo "$(gh repo view --json nameWithOwner -q .nameWithOwner)"`
   prints the exact release text.
-- `uv run pytest tests/scripts/test_release_notes.py tests/test_knowledge_base.py -q`,
-  `uv run ruff check .`, `uv lock --check`.
+- The root guide's definition-of-done checks, all passing: `uv run ruff check .`,
+  `uv run ruff format --check .`, `uv run mypy src`, `uv run pytest`, plus
+  `uv lock --check`.
 
-## 8. Confirm once
+## 8. Review
+Commit (`chore(release): easy-viz <version>`), then have the branch reviewed as the
+root guide's Delivery section requires, before any pull request exists. Fix every
+real finding, run the checks of step 7 again, and keep the fixed release text for
+step 9.
+
+A release branch holds only the version, the lock file and the documents above.
+Anything else needs its own pull request first.
+
+## 9. Confirm once
 PyPI never takes a version back, so ask exactly one question before anything leaves
 the machine. Show the version with its one-line reason (e.g. "0.3.0: two new
 features, nothing breaking") and the full release text. Then use AskUserQuestion:
 **Publish** / **Change the notes** (they say what; apply it, then ask again) /
-**Cancel**.
+**Cancel**. If the text changes after this answer for any reason, ask again: only
+text the product manager has seen gets published.
 
-## 9. Ship
-1. Branch `release/v<version>`, commit `chore(release): easy-viz <version>`, push,
-   and open the pull request with the same title. The body uses the root guide's
-   report sections, short, with the release text under *Outcome*.
-2. A release pull request holds only the version, the lock file and the documents
-   above. Anything else needs its own pull request first. Review it as the root
-   guide's Delivery section requires.
-3. `gh pr checks --watch`. Once green: `gh pr merge --squash --delete-branch`, then
-   `git switch main && git pull`.
-4. `CI` runs on the merge commit, and `Release` starts when it passes (a few
-   minutes). Find the run with `gh run list --workflow release.yml --branch main --limit 1`
-   and follow it with `gh run watch <id> --exit-status`.
-5. Verify:
+## 10. Ship
+1. Push the branch and open the pull request with the commit's title. The body uses
+   the root guide's report sections, short, with the release text under *Outcome*.
+2. `gh pr checks --watch`. Once green: `gh pr merge --squash --delete-branch`, then
+   `git switch main && git pull`, and note the merge commit: `sha=$(git rev-parse HEAD)`.
+3. Follow that commit, not the newest run (the newest can still be the previous
+   release's): `CI` first, then `Release`, which starts a few minutes after CI
+   passes. Find each with `gh run list --workflow <ci.yml | release.yml> --commit "$sha"`
+   (retry until it appears) and follow it with `gh run watch <id> --exit-status`.
+4. Verify:
    - `gh release view v<version>` shows the release text and two files
    - `https://pypi.org/pypi/<package>/<version>/json` answers 200
    - `uv run --isolated --no-project --refresh --with <package>==<version> python -c "import easy_viz"`
      works (PyPI's index can take a minute to update; retry once)
 
 ## If something fails
-- **CI fails on the release pull request:** fix it in its own pull request, then
-  rebase the release branch.
+- **CI fails on the release pull request:** fix the cause in its own pull request.
+  Once that is merged, merge `main` into the release branch (`git merge main`, a
+  new commit) and push. Never rebase a pushed branch: that needs a force-push, which
+  needs the product manager's approval.
 - **The publish job fails:** read its log, and never bump the version to retry.
-  - "invalid-publisher": the PyPI trusted publisher doesn't match (workflow
-    `release.yml`, environment `pypi`). The product manager fixes it on PyPI.
+  - "invalid-publisher", or any 400 that names the publisher: the PyPI trusted
+    publisher doesn't match (project `easy-viz`, workflow `release.yml`,
+    environment `pypi`). The product manager fixes it on PyPI.
   - a PyPI or network outage: wait.
 
   Then re-run with `gh run rerun <id>`.
