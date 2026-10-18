@@ -30,11 +30,19 @@ def test_the_real_changelog_follows_the_format() -> None:
 
 def test_body_is_the_entry_plus_a_link_to_the_previous_release() -> None:
     text = body("0.2.0")
-    assert text.startswith("Faster and steadier.\n\n### Added\n- `pie_plot`\n  with")
+    assert text.startswith("Faster and steadier.\n\n### Added\n- `pie_plot` with a")
     assert "### Internal\n- CI on macOS" in text
     assert "not released yet" not in text and "`bar_plot`" not in text
     assert "pip install --upgrade easy-viz" in text
     assert text.endswith("https://github.com/me/repo/compare/v0.1.0...v0.2.0\n")
+
+
+def test_wrapped_lines_are_joined_and_bullets_kept() -> None:
+    # GitHub shows every line break in a release body.
+    text = "One sentence\nwrapped.\n\n- item\n  wrapped\n  - nested\n    too\n- next"
+    assert notes.unwrap(text) == (
+        "One sentence wrapped.\n\n- item wrapped\n  - nested too\n- next"
+    )
 
 
 def test_first_release_links_to_its_commits() -> None:
@@ -71,6 +79,10 @@ def test_a_version_without_an_entry_is_refused() -> None:
             "at most once",
         ),
         ("## 0.1.0 - ", "## Unreleased\n\n## 0.1.0 - ", "only once"),
+        # Joined into one line by unwrap(), they would garble the release text.
+        ("  with a hole option", "  ```python\n  ev.pie_plot(df)\n  ```", "code"),
+        ("  with a hole option", "  1. upgrade\n  2. rename", "list markers"),
+        ("  with a hole option", "  * starred", "list markers"),
         (
             "The first release.\n\n### Added\n- `bar_plot`\n",
             "The first release.\n",
