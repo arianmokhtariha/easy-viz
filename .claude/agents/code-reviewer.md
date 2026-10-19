@@ -126,6 +126,9 @@ findings tool, put the full findings in the final message as well):
    - failure scenario: concrete input or state, and the wrong outcome
    - evidence: the reproduction command and its output, or the code trace
    - suggested fix direction
+   - needs the product manager: yes, naming the item on the root guide's
+     escalation list the fix falls under (a public-API change, a trade-off the user
+     would see, ...), or no
    - CONFIRMED or PLAUSIBLE
 4. **Outside the diff:** same format, if any.
 5. **Product review:** one line per product principle the change touches: upheld
