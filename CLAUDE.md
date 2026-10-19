@@ -264,10 +264,12 @@ Summaries only; the records are the source.
   (`.claude/agents/code-reviewer.md`). It audits the branch with the
   `engineering:code-review` skill from the engineering plugin, or along the same
   dimensions inline where that plugin isn't installed (never the built-in
-  `code-review`, which runs as a nested agent), and reports its findings. Fix every real issue it reports; each fix
-  gets a test that fails without it where the issue is testable, then re-run all
-  checks. No second review round: later rounds cost a full review each and find
-  mostly low-impact issues. Report a summary of the issues the review found and how
+  `code-review`, which runs as a nested agent), reviews it a second time against
+  `docs/product.md`, and reports its findings. Fix every real issue it reports,
+  except those it marks as needing the product manager: those go to the report's
+  *Decisions needed*, with your recommendation. Each fix gets a test that fails
+  without it where the issue is testable, then re-run all checks. No second review
+  round: later rounds cost a full review each and find mostly low-impact issues. Report a summary of the issues the review found and how
   each was resolved (fixed, or rejected with the reason).
   - **Keep it unbiased:** the prompt names only what to review (branch and base).
     Never pass your reasoning, approach, known issues or earlier findings. Reviewing

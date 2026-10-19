@@ -140,8 +140,8 @@ style, the same level of detail.
 ## 8. Review
 Commit (`chore(release): easy-viz <version>`), then have the branch reviewed as the
 root guide's Delivery section requires, before any pull request exists. Fix every
-real finding, run the checks of step 7 again, and keep the fixed release text for
-step 9.
+real finding (those marked as needing the product manager go to them, as Delivery
+says), run the checks of step 7 again, and keep the fixed release text for step 9.
 
 A release branch holds only the version, the lock file and the documents above.
 Anything else needs its own pull request first.
