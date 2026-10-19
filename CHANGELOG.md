@@ -15,6 +15,9 @@ lists work that doesn't change what users install or call (CI, tests, docs).
 - A `/release` command for the maintainer: it reads every change since the last
   release, picks the version number and writes the changelog entry that becomes
   the release text.
+- The code reviewer that checks every branch before its pull request now also
+  reviews it against the product principles, and reports that verdict in its own
+  section.
 
 ## 0.1.0 - 2026-10-18
 
